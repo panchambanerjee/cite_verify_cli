@@ -124,6 +124,7 @@ class MultiSourceVerifier:
             results = await asyncio.gather(
                 self._search_crossref(citation),
                 self._search_semantic_scholar(citation),
+                self._search_arxiv(citation),
                 return_exceptions=True,
             )
 
@@ -354,7 +355,7 @@ class MultiSourceVerifier:
 
                     status = (
                         VerificationStatus.VERIFIED
-                        if similarity > 0.9
+                        if similarity > 0.85
                         else VerificationStatus.PARTIAL
                     )
 
@@ -439,7 +440,7 @@ class MultiSourceVerifier:
 
                 status = (
                     VerificationStatus.VERIFIED
-                    if similarity > 0.9
+                    if similarity > 0.85
                     else VerificationStatus.PARTIAL
                 )
 
@@ -465,6 +466,66 @@ class MultiSourceVerifier:
 
         except Exception:
             return None
+
+    async def _search_arxiv(self, citation: Citation) -> Optional[VerificationResult]:
+        """Search arXiv by title."""
+        if not citation.title:
+            return None
+
+        async with self.rate_limits["arxiv"]:
+            try:
+                import arxiv
+
+                # Search arXiv by title
+                search = arxiv.Search(
+                    query=citation.title,
+                    max_results=5,
+                    sort_by=arxiv.SortCriterion.Relevance,
+                )
+
+                best_match = None
+                best_similarity = 0.0
+
+                for paper in search.results():
+                    similarity = self._title_similarity(citation.title, paper.title)
+                    if similarity > best_similarity:
+                        best_similarity = similarity
+                        best_match = paper
+
+                if not best_match or best_similarity < self.threshold:
+                    return None
+
+                status = (
+                    VerificationStatus.VERIFIED
+                    if best_similarity > 0.85
+                    else VerificationStatus.PARTIAL
+                )
+
+                # Extract arXiv ID from entry_id (e.g., "http://arxiv.org/abs/1234.56789v1")
+                arxiv_id = None
+                if best_match.entry_id:
+                    import re
+                    match = re.search(r'(\d{4}\.\d{4,5})', best_match.entry_id)
+                    if match:
+                        arxiv_id = match.group(1)
+
+                return VerificationResult(
+                    status=status,
+                    confidence=best_similarity,
+                    matched_title=best_match.title,
+                    matched_authors=[a.name for a in best_match.authors],
+                    matched_year=best_match.published.year if best_match.published else None,
+                    doi=best_match.doi,
+                    arxiv_id=arxiv_id,
+                    verified_sources=["arxiv"],
+                    metadata={
+                        "abstract": best_match.summary,
+                        "pdf_url": best_match.pdf_url,
+                    },
+                )
+
+            except Exception:
+                return None
 
     def _title_similarity(self, title1: str, title2: str) -> float:
         """Calculate title similarity (0-1)."""
