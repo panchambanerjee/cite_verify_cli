@@ -63,10 +63,93 @@ def clean_title(title: str) -> str:
     if not title:
         return ""
     
+    # Fix hyphenated line breaks (e.g., "im- age" -> "image")
+    title = re.sub(r'(\w+)-\s+(\w+)', r'\1\2', title)
+    
     # Remove extra whitespace
     title = re.sub(r'\s+', ' ', title)
+    
+    # Fix concatenated words from PDF extraction
+    # This handles cases like "networkgrammars" -> "network grammars"
+    title = fix_concatenated_words(title)
     
     # Remove common citation artifacts
     title = title.strip('.,;:')
     
     return title.strip()
+
+
+def fix_concatenated_words(text: str) -> str:
+    """
+    Fix words that were concatenated due to PDF extraction issues.
+    
+    Uses a simple heuristic: look for long lowercase words and try to split them
+    at common word boundaries.
+    """
+    if not text:
+        return text
+    
+    words = text.split()
+    fixed_words = []
+    
+    # Common English words that might appear at word boundaries
+    common_suffixes = [
+        'ing', 'tion', 'sion', 'ment', 'ness', 'able', 'ible', 'ful', 'less',
+        'ous', 'ive', 'ary', 'ory', 'ical', 'ally', 'ward', 'wise', 'like'
+    ]
+    common_prefixes = [
+        'un', 're', 'pre', 'dis', 'mis', 'non', 'over', 'under', 'sub', 'super',
+        'anti', 'auto', 'semi', 'multi', 'trans', 'inter', 'intra'
+    ]
+    
+    # Common short words that often get concatenated
+    common_words = {
+        'the', 'and', 'for', 'with', 'from', 'that', 'this', 'which', 'into',
+        'over', 'under', 'about', 'after', 'before', 'between', 'through',
+        'neural', 'network', 'networks', 'learning', 'deep', 'machine',
+        'model', 'models', 'attention', 'transformer', 'language', 'natural',
+        'processing', 'sequence', 'sequences', 'recurrent', 'convolutional',
+        'training', 'translation', 'recognition', 'generation', 'classification',
+        'grammars', 'grammar', 'parsing', 'semantic', 'syntactic', 'encoder',
+        'decoder', 'embedding', 'embeddings', 'representation', 'representations'
+    }
+    
+    for word in words:
+        # Skip short words or words with capitals (likely proper nouns)
+        if len(word) <= 10 or not word.islower():
+            fixed_words.append(word)
+            continue
+        
+        # Try to find a split point
+        split_found = False
+        
+        # Check if word contains a common word that should be separate
+        for common in sorted(common_words, key=len, reverse=True):
+            if len(common) >= 4 and common in word.lower():
+                idx = word.lower().find(common)
+                
+                # Check if splitting makes sense (both parts are reasonable)
+                before = word[:idx]
+                after = word[idx:]
+                
+                # Only split if the part before is a valid word-like string
+                if idx > 2 and len(after) > 3:
+                    # Check if 'before' looks like a word (ends reasonably)
+                    if before.lower() in common_words or len(before) >= 3:
+                        fixed_words.append(before)
+                        fixed_words.append(after)
+                        split_found = True
+                        break
+                elif idx == 0 and len(after) > len(common) + 2:
+                    # Common word at start, check what's after
+                    remainder = word[len(common):]
+                    if remainder.lower() in common_words or len(remainder) >= 4:
+                        fixed_words.append(common)
+                        fixed_words.append(remainder)
+                        split_found = True
+                        break
+        
+        if not split_found:
+            fixed_words.append(word)
+    
+    return ' '.join(fixed_words)

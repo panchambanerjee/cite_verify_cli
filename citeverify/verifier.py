@@ -355,7 +355,7 @@ class MultiSourceVerifier:
 
                     status = (
                         VerificationStatus.VERIFIED
-                        if similarity > 0.85
+                        if similarity > 0.8
                         else VerificationStatus.PARTIAL
                     )
 
@@ -440,7 +440,7 @@ class MultiSourceVerifier:
 
                 status = (
                     VerificationStatus.VERIFIED
-                    if similarity > 0.85
+                    if similarity > 0.8
                     else VerificationStatus.PARTIAL
                 )
 
@@ -497,7 +497,7 @@ class MultiSourceVerifier:
 
                 status = (
                     VerificationStatus.VERIFIED
-                    if best_similarity > 0.85
+                    if best_similarity > 0.8
                     else VerificationStatus.PARTIAL
                 )
 
