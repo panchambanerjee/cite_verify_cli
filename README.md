@@ -10,7 +10,10 @@ CitationVerify extracts citations from research papers (PDF or arXiv), verifies 
 - ✅ **Verify citations** across multiple sources (CrossRef, arXiv, Semantic Scholar)
 - 📊 **Quality scoring** across 6 dimensions (verification, peer review, recency, citations, accessibility, venue)
 - 📥 **Download PDFs** with intelligent fallback (arXiv → Unpaywall → Semantic Scholar)
-- 🎨 **Beautiful output** with rich terminal formatting (table, JSON, markdown)
+- 🎨 **Beautiful output** with rich terminal formatting (table, JSON, markdown, BibTeX)
+- 🔧 **Configurable threshold** for title similarity matching
+- 💾 **Smart caching** to avoid re-querying APIs
+- 📝 **BibTeX export** for verified citations
 
 ## Installation
 
@@ -75,11 +78,15 @@ citeverify 1706.03762
 citeverify [OPTIONS] INPUT_PATH
 
 Options:
-  -v, --verbose          Show detailed progress
-  -o, --output PATH      Output directory for PDFs (default: ./citations)
-  -f, --format FORMAT    Output format: table, json, markdown (default: table)
+  -v, --verbose          Show detailed verification logs (why citations fail)
+  -o, --output PATH      Output directory for PDFs and exports (default: ./citations)
+  -f, --format FORMAT    Output format: table, json, markdown, bibtex (default: table)
+  -t, --threshold FLOAT  Title similarity threshold 0.0-1.0 (default: 0.7)
   --no-verify           Skip verification step
   --no-download         Skip PDF downloads
+  --no-cache            Disable caching (re-query all APIs)
+  --clear-cache         Clear cache before running
+  --export-bibtex PATH  Export verified citations to BibTeX file
   --quality-min INT     Minimum quality score to display (0-100)
   --help                Show help message
 ```
@@ -116,6 +123,28 @@ citeverify paper.pdf --no-verify
 citeverify paper.pdf --no-download
 ```
 
+**Export to BibTeX:**
+```bash
+citeverify paper.pdf --format bibtex > refs.bib
+# or save to file directly
+citeverify paper.pdf --export-bibtex ./references.bib
+```
+
+**Lower threshold for more matches (may include false positives):**
+```bash
+citeverify paper.pdf --threshold 0.6
+```
+
+**Verbose mode to see why citations fail:**
+```bash
+citeverify paper.pdf --verbose
+```
+
+**Disable caching (for debugging):**
+```bash
+citeverify paper.pdf --no-cache
+```
+
 ## Project Structure
 
 ```
@@ -124,10 +153,11 @@ citeverify/
 │   ├── __init__.py
 │   ├── cli.py              # Main CLI interface
 │   ├── extractor.py        # Citation extraction
-│   ├── verifier.py         # Multi-source verification
+│   ├── verifier.py         # Multi-source verification with caching
 │   ├── downloader.py       # PDF downloads
 │   ├── scorer.py           # Quality scoring
-│   ├── formatter.py        # Output formatters
+│   ├── formatter.py        # Output formatters (table, JSON, markdown, BibTeX)
+│   ├── cache.py            # SQLite caching for API results
 │   ├── models.py           # Pydantic data models
 │   └── utils.py            # Helper functions
 ├── tests/
@@ -200,10 +230,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Next Steps
 
+- [x] Add caching to avoid re-verification
+- [x] Add export to BibTeX
+- [x] Add verbose logging for debugging
+- [x] Add configurable similarity threshold
 - [ ] Add GROBID integration for better extraction
 - [ ] Add interactive review mode
 - [ ] Add configuration file support
-- [ ] Add caching to avoid re-verification
 - [ ] Add batch processing
-- [ ] Add export to BibTeX
+- [ ] Add OpenAlex API as additional verification source
 - [ ] Publish to PyPI

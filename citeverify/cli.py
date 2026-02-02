@@ -22,6 +22,8 @@ from .formatter import (
     display_table,
     display_json,
     display_markdown,
+    display_bibtex,
+    save_bibtex,
 )
 from .models import Citation, VerifiedCitation
 
@@ -30,18 +32,18 @@ console = Console()
 
 @click.command()
 @click.argument("input_path")
-@click.option("--verbose", "-v", is_flag=True, help="Show detailed progress")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed verification logs")
 @click.option(
     "--output",
     "-o",
     type=click.Path(),
     default="./citations",
-    help="Output directory",
+    help="Output directory for PDFs and exports",
 )
 @click.option(
     "--format",
     "-f",
-    type=click.Choice(["table", "json", "markdown"]),
+    type=click.Choice(["table", "json", "markdown", "bibtex"]),
     default="table",
     help="Output format",
 )
@@ -53,6 +55,28 @@ console = Console()
     default=0,
     help="Minimum quality score to display",
 )
+@click.option(
+    "--threshold",
+    "-t",
+    type=float,
+    default=0.7,
+    help="Title similarity threshold (0.0-1.0, default: 0.7)",
+)
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    help="Disable caching (re-query all APIs)",
+)
+@click.option(
+    "--clear-cache",
+    is_flag=True,
+    help="Clear cache before running",
+)
+@click.option(
+    "--export-bibtex",
+    type=click.Path(),
+    help="Export verified citations to BibTeX file",
+)
 def main(
     input_path,
     verbose,
@@ -61,6 +85,10 @@ def main(
     no_verify,
     no_download,
     quality_min,
+    threshold,
+    no_cache,
+    clear_cache,
+    export_bibtex,
 ):
     """
     Verify citations in research papers.
@@ -74,11 +102,29 @@ def main(
       citeverify paper.pdf
       citeverify https://arxiv.org/abs/2301.12345
       citeverify 2301.12345 --output ./refs
+      citeverify paper.pdf --threshold 0.6 --verbose
+      citeverify paper.pdf --format bibtex > refs.bib
     """
     from . import __version__
+    from .cache import VerificationCache
 
     console.print(f"[bold blue]CitationVerify v{__version__}[/bold blue]")
     console.print("━" * 60)
+
+    # Handle cache clearing
+    if clear_cache:
+        cache = VerificationCache()
+        count = cache.clear()
+        console.print(f"  Cleared {count} cache entries")
+
+    # Validate threshold
+    if not 0.0 <= threshold <= 1.0:
+        console.print("[bold red]Error:[/bold red] Threshold must be between 0.0 and 1.0")
+        raise click.Abort()
+
+    if verbose:
+        console.print(f"  Similarity threshold: {threshold}")
+        console.print(f"  Caching: {'disabled' if no_cache else 'enabled'}")
 
     try:
         result = asyncio.run(
@@ -89,9 +135,12 @@ def main(
                 output_dir=output,
                 verbose=verbose,
                 quality_min=quality_min,
+                threshold=threshold,
+                use_cache=not no_cache,
             )
         )
 
+        # Display results in requested format
         if format == "table":
             display_summary(result["citations"])
             display_table(result["citations"])
@@ -99,6 +148,20 @@ def main(
             display_json(result["citations"])
         elif format == "markdown":
             display_markdown(result["citations"], result["paper_title"])
+        elif format == "bibtex":
+            display_bibtex(result["citations"], result["paper_title"])
+
+        # Export BibTeX if requested
+        if export_bibtex:
+            count = save_bibtex(result["citations"], export_bibtex)
+            console.print(f"  Exported {count} citations to {export_bibtex}")
+
+        # Show cache stats in verbose mode
+        if verbose and not no_cache:
+            from .cache import VerificationCache
+            cache = VerificationCache()
+            stats = cache.stats()
+            console.print(f"\n  Cache: {stats['valid_entries']} entries")
 
         console.print(f"\n✨ Done in {result['duration']}")
 
@@ -117,6 +180,8 @@ async def run_pipeline(
     output_dir: str,
     verbose: bool,
     quality_min: int,
+    threshold: float = 0.7,
+    use_cache: bool = True,
 ) -> dict:
     """Main processing pipeline."""
     start_time = time.time()
@@ -132,6 +197,13 @@ async def run_pipeline(
         input_type = "pdf"
     else:
         input_type = "arxiv"
+
+    # Verbose logging callback
+    verbose_logs = []
+    def log_callback(msg: str):
+        if verbose:
+            console.print(f"  [dim]{msg}[/dim]")
+        verbose_logs.append(msg)
 
     with Progress(
         SpinnerColumn(),
@@ -159,7 +231,14 @@ async def run_pipeline(
                 "Verifying citations...",
                 total=len(verified_citations),
             )
-            verifier = MultiSourceVerifier()
+            
+            # Create verifier with threshold, caching, and verbose logging
+            verifier = MultiSourceVerifier(
+                threshold=threshold,
+                use_cache=use_cache,
+                verbose=verbose,
+                log_callback=log_callback,
+            )
 
             for citation in verified_citations:
                 result = await verifier.verify(citation)
@@ -174,8 +253,16 @@ async def run_pipeline(
                 if c.verification
                 and c.verification.status.value == "verified"
             )
+            partial_count = sum(
+                1
+                for c in verified_citations
+                if c.verification
+                and c.verification.status.value == "partial"
+            )
+            
             console.print(
                 f"  ✓ Verified {verified_count}/{len(verified_citations)} citations"
+                + (f" ({partial_count} partial)" if partial_count else "")
             )
 
         if verify:
@@ -227,6 +314,7 @@ async def run_pipeline(
         "paper_title": paper_title,
         "citations": verified_citations,
         "duration": duration,
+        "verbose_logs": verbose_logs,
     }
 
 
