@@ -145,11 +145,8 @@ class CitationExtractor:
         if doi_match:
             doi = normalize_doi(doi_match.group(0))
         
-        # Extract arXiv ID
-        arxiv_match = re.search(r'arXiv:(\d{4}\.\d{4,5})', text, re.IGNORECASE)
-        arxiv_id = None
-        if arxiv_match:
-            arxiv_id = normalize_arxiv_id(arxiv_match.group(1))
+        # Extract arXiv ID - multiple patterns
+        arxiv_id = self._extract_arxiv_id(text)
         
         # Extract year (4-digit number)
         year = extract_year_from_text(text)
@@ -158,49 +155,23 @@ class CitationExtractor:
         url_match = re.search(r'https?://[^\s\)]+', text)
         url = url_match.group(0).rstrip('.,)') if url_match else None
         
-        # Extract title (text in quotes or italics)
-        title = None
-        # Try double quotes first
-        title_match = re.search(r'["""](.+?)["""]', text)
-        if title_match:
-            title = clean_title(title_match.group(1))
-        else:
-            # Try single quotes
-            title_match = re.search(r"'(.+?)'", text)
-            if title_match:
-                title = clean_title(title_match.group(1))
-            else:
-                # Try to find title-like text (often before year)
-                if year:
-                    # Text between authors and year might be title
-                    year_pos = text.find(str(year))
-                    if year_pos > 0:
-                        # Look for text segment before year
-                        before_year = text[:year_pos].strip()
-                        # Remove common author patterns
-                        before_year = re.sub(r'^[A-Z][a-z]+(?:\s+[A-Z]\.?)+', '', before_year)
-                        before_year = before_year.strip('.,;: ')
-                        if len(before_year) > 10:
-                            title = clean_title(before_year)
+        # Extract title using improved method
+        title = self._extract_title_from_citation(text, year)
         
-        # Extract authors (crude: text before year or title)
-        authors = None
-        if year:
-            author_text = text[:text.find(str(year))].strip()
-            # Split by 'and' or commas
-            author_parts = re.split(r'\s+and\s+|,\s+(?=[A-Z])', author_text)
-            authors = [a.strip().rstrip('.,') for a in author_parts if a.strip()][:5]  # Max 5
+        # Extract authors (text before first period, typically)
+        authors = self._extract_authors(text)
         
         # Extract journal (often after title, before year or DOI)
         journal = None
         journal_patterns = [
             r'In\s+([^,]+?)(?:,|\.|$)',
             r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:Journal|Proceedings|Conference)',
+            r'(?:CoRR|arXiv)',  # Common preprint indicators
         ]
         for pattern in journal_patterns:
             journal_match = re.search(pattern, text, re.IGNORECASE)
             if journal_match:
-                journal = journal_match.group(1).strip('.,')
+                journal = journal_match.group(0).strip('.,')
                 break
         
         return Citation(
@@ -214,6 +185,145 @@ class CitationExtractor:
             url=url,
             journal=journal
         )
+    
+    def _extract_arxiv_id(self, text: str) -> str:
+        """
+        Extract arXiv ID from citation text.
+        
+        Handles multiple formats:
+        - arXiv:1234.56789
+        - arxiv.org/abs/1234.56789
+        - abs/1234.56789
+        - CoRR, abs/1234.56789
+        """
+        # Pattern 1: arXiv:XXXX.XXXXX (with optional version)
+        match = re.search(r'arXiv[:\s]+(\d{4}\.\d{4,5})(?:v\d+)?', text, re.IGNORECASE)
+        if match:
+            return normalize_arxiv_id(match.group(1))
+        
+        # Pattern 2: arxiv.org/abs/XXXX.XXXXX
+        match = re.search(r'arxiv\.org/abs/(\d{4}\.\d{4,5})', text, re.IGNORECASE)
+        if match:
+            return normalize_arxiv_id(match.group(1))
+        
+        # Pattern 3: abs/XXXX.XXXXX (common in CoRR citations)
+        match = re.search(r'abs/(\d{4}\.\d{4,5})', text, re.IGNORECASE)
+        if match:
+            return normalize_arxiv_id(match.group(1))
+        
+        # Pattern 4: Old arXiv format (e.g., cs.CL/0001001)
+        match = re.search(r'arXiv[:\s]+([a-z-]+(?:\.[A-Z]{2})?/\d{7})', text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        
+        return None
+    
+    def _extract_title_from_citation(self, text: str, year: int = None) -> str:
+        """
+        Extract title from citation text using multiple strategies.
+        
+        Common citation formats:
+        1. Author1, Author2. Title of paper. Journal, year.
+        2. Author1 et al. "Title of paper". Journal, year.
+        3. Author1 and Author2. Title. In Proceedings of..., year.
+        """
+        # Strategy 1: Title in quotes
+        title_match = re.search(r'["""]([^"""]+)["""]', text)
+        if title_match:
+            title = title_match.group(1).strip()
+            if len(title) > 10:
+                return clean_title(title)
+        
+        # Strategy 2: Title between author block and journal/year
+        # Look for pattern: "Authors. Title. Journal/venue"
+        # Authors typically end with a period after last name or "et al."
+        
+        # Find the first period that's likely after authors
+        # (followed by a capital letter, indicating start of title)
+        author_end_match = re.search(
+            r'(?:et\s+al\.|[A-Z][a-z]+)\.\s+([A-Z][^.]*(?:\.[^.]*)*?)(?:\.\s*(?:In\s|CoRR|arXiv|Proceedings|Journal|Trans\.|IEEE|ACM|\d{4}))',
+            text,
+            re.IGNORECASE
+        )
+        if author_end_match:
+            title = author_end_match.group(1).strip()
+            # Clean up - remove trailing period
+            title = title.rstrip('.')
+            if len(title) > 10:
+                return clean_title(title)
+        
+        # Strategy 3: Find sentence-like text between periods
+        # Split by periods and find the longest segment that looks like a title
+        sentences = re.split(r'\.\s+', text)
+        
+        # Skip first segment (likely authors) and last segment (likely venue/year)
+        if len(sentences) > 2:
+            # Look for the title among middle segments
+            candidates = []
+            for i, sent in enumerate(sentences[1:-1], 1):
+                sent = sent.strip()
+                # Title candidates: start with capital, reasonable length, not a venue
+                if (sent and 
+                    sent[0].isupper() and 
+                    10 < len(sent) < 200 and
+                    not re.match(r'^(In\s|Proceedings|Journal|Trans\.|IEEE|ACM|CoRR|arXiv)', sent, re.IGNORECASE)):
+                    candidates.append((len(sent), sent))
+            
+            if candidates:
+                # Return the longest candidate
+                candidates.sort(reverse=True)
+                return clean_title(candidates[0][1])
+        
+        # Strategy 4: Fallback - text before year minus author-like prefix
+        if year:
+            year_pos = text.find(str(year))
+            if year_pos > 0:
+                before_year = text[:year_pos]
+                # Try to find title after first period
+                period_match = re.search(r'\.\s*(.+?)$', before_year)
+                if period_match:
+                    title = period_match.group(1).strip().rstrip('.,')
+                    if len(title) > 10:
+                        return clean_title(title)
+        
+        return None
+    
+    def _extract_authors(self, text: str) -> list:
+        """
+        Extract author names from citation text.
+        
+        Authors are typically at the start, ending with a period.
+        """
+        # Find text before first period followed by capital letter (title start)
+        author_match = re.match(
+            r'^([^.]+(?:\.\s*[A-Z]\.)*[^.]*?)\.(?=\s*[A-Z])',
+            text
+        )
+        
+        if author_match:
+            author_text = author_match.group(1)
+        else:
+            # Fallback: take text up to first period
+            period_pos = text.find('.')
+            if period_pos > 0:
+                author_text = text[:period_pos]
+            else:
+                return None
+        
+        # Split authors by 'and' or commas
+        # Handle "Firstname Lastname, Firstname Lastname, and Firstname Lastname"
+        author_text = re.sub(r',\s+and\s+', ', ', author_text, flags=re.IGNORECASE)
+        author_parts = re.split(r'\s+and\s+|,\s+(?=[A-Z])', author_text)
+        
+        authors = []
+        for part in author_parts:
+            part = part.strip().rstrip('.,')
+            if part and len(part) > 2:
+                # Skip "et al."
+                if part.lower() not in ['et al', 'et al.', 'others']:
+                    authors.append(part)
+        
+        return authors[:10] if authors else None  # Max 10 authors
     
     def extract_from_arxiv(self, arxiv_id: str) -> Tuple[List[Citation], str]:
         """
