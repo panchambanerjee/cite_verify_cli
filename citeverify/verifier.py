@@ -1,6 +1,7 @@
 """Multi-source citation verification with caching and verbose logging."""
 
 import asyncio
+import re
 import aiohttp
 from typing import Optional, List, Callable
 from difflib import SequenceMatcher
@@ -34,8 +35,9 @@ class MultiSourceVerifier:
         self.verbose = verbose
         self.log_callback = log_callback
         self.rate_limits = {
-            "crossref": asyncio.Semaphore(5),  # 5 req/sec
-            "arxiv": asyncio.Semaphore(3),  # 3 req/sec
+            "crossref": asyncio.Semaphore(5),
+            "arxiv": asyncio.Semaphore(3),
+            "openalex": asyncio.Semaphore(3),
         }
 
         if use_cache:
@@ -70,19 +72,19 @@ class MultiSourceVerifier:
             if self.cache:
                 cached = self.cache.get("doi", citation.doi)
                 if cached:
-                    self._log(f"[{citation.number}] ✓ Found in cache (DOI)")
+                    self._log(f"[{citation.number}] Found in cache (DOI)")
                     return cached
 
             result = await self._verify_via_crossref_doi(citation.doi)
 
             if result.status == VerificationStatus.VERIFIED:
-                self._log(f"[{citation.number}] ✓ Verified via CrossRef DOI")
+                self._log(f"[{citation.number}] Verified via CrossRef DOI")
                 if self.cache:
                     self.cache.set("doi", citation.doi, result)
                 return result
             else:
                 self._log(
-                    f"[{citation.number}] ✗ DOI lookup failed: {result.discrepancies}"
+                    f"[{citation.number}] DOI lookup failed: {result.discrepancies}"
                 )
 
         # Priority 2: arXiv ID lookup
@@ -93,19 +95,19 @@ class MultiSourceVerifier:
             if self.cache:
                 cached = self.cache.get("arxiv", citation.arxiv_id)
                 if cached:
-                    self._log(f"[{citation.number}] ✓ Found in cache (arXiv)")
+                    self._log(f"[{citation.number}] Found in cache (arXiv)")
                     return cached
 
             result = await self._verify_via_arxiv(citation.arxiv_id)
 
             if result.status == VerificationStatus.VERIFIED:
-                self._log(f"[{citation.number}] ✓ Verified via arXiv")
+                self._log(f"[{citation.number}] Verified via arXiv")
                 if self.cache:
                     self.cache.set("arxiv", citation.arxiv_id, result)
                 return result
             else:
                 self._log(
-                    f"[{citation.number}] ✗ arXiv lookup failed: {result.discrepancies}"
+                    f"[{citation.number}] arXiv lookup failed: {result.discrepancies}"
                 )
 
         # Priority 3: Fuzzy search
@@ -118,13 +120,14 @@ class MultiSourceVerifier:
             if self.cache:
                 cached = self.cache.get("title", citation.title)
                 if cached:
-                    self._log(f"[{citation.number}] ✓ Found in cache (title)")
+                    self._log(f"[{citation.number}] Found in cache (title)")
                     return cached
 
             results = await asyncio.gather(
                 self._search_crossref(citation),
                 self._search_semantic_scholar(citation),
                 self._search_arxiv(citation),
+                self._search_openalex(citation),
                 return_exceptions=True,
             )
 
@@ -141,7 +144,7 @@ class MultiSourceVerifier:
                     best = max(valid_results, key=lambda r: r.confidence)
                 source = best.verified_sources[0] if best.verified_sources else "unknown"
                 self._log(
-                    f"[{citation.number}] ✓ Found via {source} "
+                    f"[{citation.number}] Found via {source} "
                     f"(similarity: {best.confidence:.2f})"
                 )
                 if self.cache:
@@ -149,11 +152,11 @@ class MultiSourceVerifier:
                 return best
             else:
                 self._log(
-                    f"[{citation.number}] ✗ Title search failed "
+                    f"[{citation.number}] Title search failed "
                     f"(threshold: {self.threshold})"
                 )
         else:
-            self._log(f"[{citation.number}] ✗ No title, DOI, or arXiv ID to search")
+            self._log(f"[{citation.number}] No title, DOI, or arXiv ID to search")
 
         # Not found anywhere
         reasons = []
@@ -166,7 +169,7 @@ class MultiSourceVerifier:
         else:
             reasons.append(f"Title similarity below threshold ({self.threshold})")
 
-        self._log(f"[{citation.number}] ✗ Not verified: {', '.join(reasons)}")
+        self._log(f"[{citation.number}] Not verified: {', '.join(reasons)}")
 
         return VerificationResult(
             status=VerificationStatus.UNVERIFIED,
@@ -525,6 +528,100 @@ class MultiSourceVerifier:
                         "pdf_url": best_match.pdf_url,
                     },
                 )
+
+            except Exception:
+                return None
+
+    async def _search_openalex(self, citation: Citation) -> Optional[VerificationResult]:
+        """Search OpenAlex by title (broader coverage: preprints, older papers, etc.)."""
+        if not citation.title:
+            return None
+
+        async with self.rate_limits["openalex"]:
+            url = "https://api.openalex.org/works"
+            params = {
+                "search": citation.title,
+                "per-page": 10,
+            }
+
+            try:
+                async with self.session.get(
+                    url, params=params, timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
+                    if resp.status != 200:
+                        return None
+
+                    data = await resp.json()
+                    results = data.get("results", [])
+
+                    if not results:
+                        return None
+
+                    best_match = max(
+                        results,
+                        key=lambda w: self._title_similarity(
+                            citation.title,
+                            w.get("title") or w.get("display_name", ""),
+                        ),
+                    )
+
+                    matched_title = (
+                        best_match.get("title") or best_match.get("display_name", "")
+                    )
+                    similarity = self._title_similarity(citation.title, matched_title)
+
+                    if similarity < self.threshold:
+                        return None
+
+                    status = (
+                        VerificationStatus.VERIFIED
+                        if similarity > 0.8
+                        else VerificationStatus.PARTIAL
+                    )
+
+                    matched_authors = [
+                        a.get("author", {}).get("display_name", "")
+                        for a in best_match.get("authorships", [])
+                    ]
+                    matched_year = best_match.get("publication_year")
+
+                    doi = None
+                    ids = best_match.get("ids", {}) or {}
+                    if ids.get("doi"):
+                        doi_raw = ids["doi"]
+                        if isinstance(doi_raw, str) and "doi.org/" in doi_raw:
+                            doi = doi_raw.split("doi.org/")[-1]
+                        else:
+                            doi = str(doi_raw)
+
+                    arxiv_id = None
+                    for loc in best_match.get("locations", []) or []:
+                        loc_id = loc.get("id", "")
+                        arxiv_match = re.search(
+                            r"arxiv\.org[:\s]*(\d{4}\.\d{4,5})|arxiv\.(\d{4}\.\d{4,5})",
+                            loc_id,
+                            re.IGNORECASE,
+                        )
+                        if arxiv_match:
+                            arxiv_id = arxiv_match.group(1) or arxiv_match.group(2)
+                            break
+                    if arxiv_id:
+                        arxiv_id = normalize_arxiv_id(arxiv_id)
+
+                    return VerificationResult(
+                        status=status,
+                        confidence=similarity,
+                        matched_title=matched_title,
+                        matched_authors=matched_authors,
+                        matched_year=matched_year,
+                        doi=doi,
+                        arxiv_id=arxiv_id,
+                        verified_sources=["openalex"],
+                        metadata={
+                            "cited_by_count": best_match.get("cited_by_count"),
+                            "openalex_id": best_match.get("id"),
+                        },
+                    )
 
             except Exception:
                 return None

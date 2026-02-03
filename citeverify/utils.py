@@ -106,46 +106,45 @@ def fix_concatenated_words(text: str) -> str:
     common_words = {
         'the', 'and', 'for', 'with', 'from', 'that', 'this', 'which', 'into',
         'over', 'under', 'about', 'after', 'before', 'between', 'through',
-        'neural', 'network', 'networks', 'learning', 'deep', 'machine',
-        'model', 'models', 'attention', 'transformer', 'language', 'natural',
-        'processing', 'sequence', 'sequences', 'recurrent', 'convolutional',
-        'training', 'translation', 'recognition', 'generation', 'classification',
-        'grammars', 'grammar', 'parsing', 'semantic', 'syntactic', 'encoder',
-        'decoder', 'embedding', 'embeddings', 'representation', 'representations'
+        'neural', 'network', 'networks', 'learning', 'learn', 'learns', 'deep',
+        'machine', 'machines', 'model', 'models', 'attention', 'transformer',
+        'language', 'natural', 'processing', 'sequence', 'sequences',
+        'recurrent', 'convolutional', 'training', 'translation', 'recognition',
+        'generation', 'classification', 'grammars', 'grammar', 'parsing',
+        'semantic', 'syntactic', 'encoder', 'decoder', 'embedding', 'embeddings',
+        'representation', 'representations', 'algorithms', 'algorithm', 'gpus',
+        'gpu', 'limits', 'exploring', 'international', 'conference',
     }
     
     for word in words:
-        # Skip short words or words with capitals (likely proper nouns)
-        if len(word) <= 10 or not word.islower():
+        # Skip short words
+        if len(word) <= 8:
             fixed_words.append(word)
             continue
+        # Process long words: lowercase for split logic, but also handle mixed-case
+        word_lower = word.lower()
         
         # Try to find a split point
         split_found = False
         
-        # Check if word contains a common word that should be separate
         for common in sorted(common_words, key=len, reverse=True):
-            if len(common) >= 4 and common in word.lower():
-                idx = word.lower().find(common)
-                
-                # Check if splitting makes sense (both parts are reasonable)
+            if len(common) >= 3 and common in word_lower:
+                idx = word_lower.find(common)
                 before = word[:idx]
                 after = word[idx:]
                 
-                # Only split if the part before is a valid word-like string
                 if idx > 2 and len(after) > 3:
-                    # Check if 'before' looks like a word (ends reasonably)
                     if before.lower() in common_words or len(before) >= 3:
-                        fixed_words.append(before)
-                        fixed_words.append(after)
+                        # Recursively fix parts (handles multiple concatenations)
+                        fixed_words.extend(fix_concatenated_words(before).split())
+                        fixed_words.extend(fix_concatenated_words(after).split())
                         split_found = True
                         break
                 elif idx == 0 and len(after) > len(common) + 2:
-                    # Common word at start, check what's after
                     remainder = word[len(common):]
                     if remainder.lower() in common_words or len(remainder) >= 4:
-                        fixed_words.append(common)
-                        fixed_words.append(remainder)
+                        fixed_words.extend(fix_concatenated_words(word[:len(common)]).split())
+                        fixed_words.extend(fix_concatenated_words(remainder).split())
                         split_found = True
                         break
         

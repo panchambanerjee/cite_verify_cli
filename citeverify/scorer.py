@@ -201,24 +201,24 @@ class CitationQualityScorer:
         parts = []
         
         if v >= 20:
-            parts.append("✓ Verified")
+            parts.append("Verified")
         elif v < 10:
-            parts.append("⚠ Verification issues")
+            parts.append("Verification issues")
         
         if p >= 15:
-            parts.append("✓ Peer-reviewed")
+            parts.append("Peer-reviewed")
         elif p == 10:
-            parts.append("📄 Preprint")
+            parts.append("Preprint")
         
         if r <= 5:
-            parts.append("📅 Older reference")
+            parts.append("Older reference")
         
         if c >= 12:
-            parts.append("🌟 Highly cited")
+            parts.append("Highly cited")
         
         if a >= 15:
-            parts.append("🔓 Open access")
+            parts.append("Open access")
         elif a <= 5:
-            parts.append("🔒 Paywalled")
+            parts.append("Paywalled")
         
         return " • ".join(parts) if parts else "Standard citation"

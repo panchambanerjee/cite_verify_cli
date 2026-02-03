@@ -52,12 +52,10 @@ def display_summary(citations: List[VerifiedCitation]) -> None:
     console.print("\n[bold]SUMMARY[/bold]")
     console.print("━" * 60)
     console.print(f"Total Citations:        {total}")
-    console.print(f"✓ Verified:            {verified} ({verified * 100 // total}%)")
-    console.print(f"≈ Partial Match:        {partial} ({partial * 100 // total}%)")
-    console.print(f"✗ Unverified:           {unverified} ({unverified * 100 // total}%)")
-    console.print(
-        f"\nOverall Quality:        {int(avg_quality)}/100 {get_stars(avg_quality)}"
-    )
+    console.print(f"Verified:              {verified} ({verified * 100 // total}%)")
+    console.print(f"Partial Match:         {partial} ({partial * 100 // total}%)")
+    console.print(f"Unverified:            {unverified} ({unverified * 100 // total}%)")
+    console.print(f"\nOverall Quality:        {int(avg_quality)}/100")
     console.print(
         f"\nPDFs Available:         {pdfs_available}/{total} "
         f"({pdfs_available * 100 // total}%)"
@@ -80,14 +78,14 @@ def display_table(citations: List[VerifiedCitation]) -> None:
         status_str = "?"
         if citation.verification:
             if citation.verification.status == VerificationStatus.VERIFIED:
-                status_str = "✓ [green]Valid[/green]"
+                status_str = "[green]Valid[/green]"
             elif citation.verification.status == VerificationStatus.PARTIAL:
-                status_str = "≈ [yellow]Partial[/yellow]"
+                status_str = "[yellow]Partial[/yellow]"
             else:
-                status_str = "✗ [red]Unverified[/red]"
+                status_str = "[red]Unverified[/red]"
 
         score = citation.quality_score.total if citation.quality_score else 0
-        pdf = "✓" if citation.pdf_download and citation.pdf_download.success else "✗"
+        pdf = "Yes" if citation.pdf_download and citation.pdf_download.success else "No"
 
         title = (
             citation.verification.matched_title
@@ -125,13 +123,13 @@ def display_markdown(
 
     for citation in citations:
         status = (
-            "✓"
+            "Verified"
             if citation.verification
             and citation.verification.status == VerificationStatus.VERIFIED
             else "?"
         )
         score = citation.quality_score.total if citation.quality_score else 0
-        pdf = "✓" if citation.pdf_download and citation.pdf_download.success else "✗"
+        pdf = "Yes" if citation.pdf_download and citation.pdf_download.success else "No"
         title = (
             citation.verification.matched_title
             if citation.verification
@@ -293,20 +291,6 @@ def _determine_entry_type(v) -> str:
         return "phdthesis"
     else:
         return "misc"
-
-
-def get_stars(score: float) -> str:
-    """Convert score to star rating."""
-    if score >= 90:
-        return "⭐⭐⭐⭐⭐"
-    elif score >= 75:
-        return "⭐⭐⭐⭐"
-    elif score >= 60:
-        return "⭐⭐⭐"
-    elif score >= 40:
-        return "⭐⭐"
-    else:
-        return "⭐"
 
 
 def save_bibtex(citations: List[VerifiedCitation], output_path: str) -> int:

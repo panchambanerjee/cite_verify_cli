@@ -220,7 +220,7 @@ async def run_pipeline(
             citations, paper_title = extractor.extract_from_arxiv(input_path)
 
         progress.update(extract_task, completed=100)
-        console.print(f"  ✓ Extracted {len(citations)} citations")
+        console.print(f"  Extracted {len(citations)} citations")
 
         verified_citations: List[VerifiedCitation] = [
             VerifiedCitation(**c.model_dump()) for c in citations
@@ -261,7 +261,7 @@ async def run_pipeline(
             )
             
             console.print(
-                f"  ✓ Verified {verified_count}/{len(verified_citations)} citations"
+                f"  Verified {verified_count}/{len(verified_citations)} citations"
                 + (f" ({partial_count} partial)" if partial_count else "")
             )
 
@@ -298,7 +298,7 @@ async def run_pipeline(
                 if c.pdf_download and c.pdf_download.success
             )
             console.print(
-                f"  ✓ Downloaded {available}/{len(verified_citations)} PDFs"
+                f"  Downloaded {available}/{len(verified_citations)} PDFs"
             )
 
     if quality_min > 0:

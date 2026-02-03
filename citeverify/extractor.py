@@ -196,8 +196,13 @@ class CitationExtractor:
         - abs/1234.56789
         - CoRR, abs/1234.56789
         """
-        # Pattern 1: arXiv:XXXX.XXXXX (with optional version)
+        # Pattern 1: arXiv:XXXX.XXXXX or arXiv preprint arXiv:XXXX.XXXXX
         match = re.search(r'arXiv[:\s]+(\d{4}\.\d{4,5})(?:v\d+)?', text, re.IGNORECASE)
+        if match:
+            return normalize_arxiv_id(match.group(1))
+        
+        # Pattern 1b: "arXiv preprint 1602.02410" (no colon)
+        match = re.search(r'arXiv\s+preprint\s+(\d{4}\.\d{4,5})', text, re.IGNORECASE)
         if match:
             return normalize_arxiv_id(match.group(1))
         
@@ -252,7 +257,7 @@ class CitationExtractor:
             if len(title) > 10:
                 return clean_title(title)
         
-        # Strategy 2b: "Authors. Title, year." (no journal, title ends with comma + year)
+        # Strategy 2b: "Authors. Title, year." or "Authors. Title? In Venue, year."
         if year:
             title_comma_year = re.search(
                 r'\.\s+(.+),\s*(?:19|20)\d{2}\s*\.?\s*$',
@@ -261,6 +266,9 @@ class CitationExtractor:
             )
             if title_comma_year:
                 title = title_comma_year.group(1).strip().rstrip('.,')
+                # Strip venue if captured (e.g. "Title? In Advances..." or "Title. In Proc.")
+                if ". In " in title or "? In " in title:
+                    title = re.split(r'[.?]\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.?')
                 if len(title) > 10:
                     return clean_title(title)
         
@@ -295,9 +303,9 @@ class CitationExtractor:
                 period_match = re.search(r'\.\s*(.+?)$', before_year)
                 if period_match:
                     title = period_match.group(1).strip().rstrip('.,')
-                    # Strip venue that was captured (e.g. "Title. In Proc. of NAACL")
-                    if ". In " in title or ". In Proc" in title:
-                        title = re.split(r'\.\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.')
+                    # Strip venue that was captured (e.g. "Title. In Proc." or "Title? In Advances...")
+                    if ". In " in title or "? In " in title:
+                        title = re.split(r'[.?]\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.?')
                     if len(title) > 10:
                         return clean_title(title)
         
