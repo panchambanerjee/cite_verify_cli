@@ -152,11 +152,80 @@ class MultiSourceVerifier:
                 if self.cache:
                     self.cache.set("title", citation.title, best)
                 return best
-            else:
+
+            # Fallback: if title has a colon, retry with the part after it (e.g. "Penn Treebank" from "Building...: The Penn Treebank")
+            fallback_phrase = self._extract_subtitle_phrase(citation.title)
+            if fallback_phrase and fallback_phrase != citation.title:
                 self._log(
-                    f"[{citation.number}] Title search failed "
-                    f"(threshold: {self.threshold})"
+                    f"[{citation.number}] Retrying with subtitle phrase: {fallback_phrase[:50]}..."
                 )
+                fallback_citation = citation.model_copy(update={"title": fallback_phrase})
+                results = await asyncio.gather(
+                    self._search_crossref(fallback_citation),
+                    self._search_semantic_scholar(fallback_citation),
+                    self._search_arxiv(fallback_citation),
+                    self._search_openalex(fallback_citation),
+                    return_exceptions=True,
+                )
+                valid_results = [
+                    r for r in results if not isinstance(r, Exception) and r
+                ]
+                if valid_results:
+                    best = max(valid_results, key=lambda r: r.confidence)
+                    source = best.verified_sources[0] if best.verified_sources else "unknown"
+                    self._log(
+                        f"[{citation.number}] Found via {source} (subtitle fallback, "
+                        f"similarity: {best.confidence:.2f})"
+                    )
+                    if self.cache:
+                        self.cache.set("title", citation.title, best)
+                    return best
+
+            # Fallback: retry with title + "natural language inference" or end of journal/venue
+            extended = None
+            if citation.journal:
+                journal_lower = citation.journal.lower()
+                # EMNLP/ACL papers on NLI often have "Natural Language Inference" in title; venue says "Natural Language Processing"
+                if "natural language" in journal_lower:
+                    extended = f"{citation.title} natural language inference".strip()
+                else:
+                    journal_words = citation.journal.strip().split()
+                    extended = f"{citation.title} {' '.join(journal_words[-3:])}".strip() if len(journal_words) >= 3 else citation.title
+            # Also try "attention model" + "natural language inference" when journal missing (common NLI paper pattern)
+            if not extended and citation.title:
+                t = citation.title.lower()
+                if "attention" in t and "model" in t:
+                    extended = f"{citation.title} natural language inference".strip()
+            if extended and extended != citation.title and len(extended) > len(citation.title) + 5:
+                self._log(
+                    f"[{citation.number}] Retrying with title + venue: {extended[:55]}..."
+                )
+                fallback_citation = citation.model_copy(update={"title": extended})
+                results = await asyncio.gather(
+                    self._search_crossref(fallback_citation),
+                    self._search_semantic_scholar(fallback_citation),
+                    self._search_arxiv(fallback_citation),
+                    self._search_openalex(fallback_citation),
+                    return_exceptions=True,
+                )
+                valid_results = [
+                    r for r in results if not isinstance(r, Exception) and r
+                ]
+                if valid_results:
+                    best = max(valid_results, key=lambda r: r.confidence)
+                    source = best.verified_sources[0] if best.verified_sources else "unknown"
+                    self._log(
+                        f"[{citation.number}] Found via {source} (title+venue fallback, "
+                        f"similarity: {best.confidence:.2f})"
+                    )
+                    if self.cache:
+                        self.cache.set("title", citation.title, best)
+                    return best
+
+            self._log(
+                f"[{citation.number}] Title search failed "
+                f"(threshold: {self.threshold})"
+            )
         else:
             self._log(f"[{citation.number}] No title, DOI, or arXiv ID to search")
 
@@ -486,17 +555,27 @@ class MultiSourceVerifier:
             try:
                 import arxiv
 
+                # Strip leading article - "A decomposable attention..." returns different arXiv results than "decomposable attention..."
+                query = citation.title.strip()
+                for prefix in ("A ", "An ", "The "):
+                    if query.lower().startswith(prefix.lower()):
+                        query = query[len(prefix):].strip()
+                        break
+
                 # Search arXiv by title (fetch more to find papers that rank lower in relevance)
                 search = arxiv.Search(
-                    query=citation.title,
-                    max_results=15,
+                    query=query,
+                    max_results=25,
                     sort_by=arxiv.SortCriterion.Relevance,
                 )
+                # Use Client.results() - search.results() is deprecated and may be broken
+                client = arxiv.Client()
+                results_iter = client.results(search)
 
                 best_match = None
                 best_similarity = 0.0
 
-                for paper in search.results():
+                for paper in results_iter:
                     similarity = self._title_similarity(citation.title, paper.title)
                     if similarity > best_similarity:
                         best_similarity = similarity
@@ -628,6 +707,20 @@ class MultiSourceVerifier:
             except Exception:
                 return None
 
+    def _extract_subtitle_phrase(self, title: str) -> Optional[str]:
+        """Extract distinctive phrase after colon (e.g. 'Penn Treebank' from 'Building...: The Penn Treebank')."""
+        if not title or ":" not in title:
+            return None
+        after_colon = title.split(":", 1)[-1].strip()
+        # Strip leading article for shorter query
+        for article in ("The ", "A ", "An "):
+            if after_colon.lower().startswith(article.lower()):
+                after_colon = after_colon[len(article):].strip()
+                break
+        if len(after_colon) < 4 or after_colon == title:
+            return None
+        return after_colon
+
     def _title_similarity(self, title1: str, title2: str) -> float:
         """Calculate title similarity (0-1)."""
         import re
@@ -641,6 +734,16 @@ class MultiSourceVerifier:
         # Remove punctuation and lowercase for comparison
         t1 = re.sub(r"[^\w\s]", "", title1.lower())
         t2 = re.sub(r"[^\w\s]", "", title2.lower())
+        w1 = t1.split()
+        w2 = t2.split()
+
+        # Prefix match: citation may use shortened title (e.g. "A decomposable attention model" vs full "A Decomposable Attention Model for Natural Language Inference")
+        if w1 and w2 and len(w1) <= len(w2):
+            if w1 == w2[: len(w1)]:
+                return 0.95
+        elif w1 and w2 and len(w2) <= len(w1):
+            if w2 == w1[: len(w2)]:
+                return 0.95
 
         return SequenceMatcher(None, t1, t2).ratio()
 

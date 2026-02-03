@@ -246,10 +246,9 @@ class CitationExtractor:
         
         # Strategy 2: Title between author block and journal/year
         # Look for pattern: "Authors. Title. Journal/venue"
-        # Authors typically end with a period after last name or "et al."
-        # Use Unicode-friendly letter class so names like Łukasz match
+        # Require author word length >= 2 so we don't match "M." (middle initial) and capture "Rush. Title"
         author_end_match = re.search(
-            r'(?:et\s+al\.|[A-Za-z\u00C0-\u024F][a-z\u00C0-\u024F]*)\.\s+([A-Z][^.]*(?:\.[^.]*)*?)(?:\.\s*(?:In\s|CoRR|arXiv|Proceedings|Journal|Trans\.|IEEE|ACM|\d{4}))',
+            r'(?:et\s+al\.|[A-Za-z\u00C0-\u024F][a-z\u00C0-\u024F]+)\.\s+([A-Z][^.]*(?:\.[^.]*)*?)(?:\.\s*(?:In\s|CoRR|arXiv|Proceedings|Journal|Trans\.|IEEE|ACM|\d{4}))',
             text,
             re.IGNORECASE
         )
@@ -261,11 +260,14 @@ class CitationExtractor:
                 return clean_title(title)
 
         # Strategy 2d: "Authors. Title. In Venue..." or "Authors. Title In Venue..." (venue delimiter)
-        # PDFs often drop the period/space before "In" (e.g. "algorithmsIn International"); normalize whitespace
+        # PDFs often drop spaces at line breaks: "networks.\nIn International" -> "networks.InInternational"
         text_normalized = re.sub(r'\s+', ' ', text)
-        # Try venue-style "In International/Proceedings/Conference..." (catches "algorithmsIn International" when PDF drops space)
+        # Restore missing spaces: ".InInternational" -> ". In International" (period+In and In+Capital)
+        text_normalized = re.sub(r'\.In([A-Z])', r'. In \1', text_normalized)
+        text_normalized = re.sub(r'\bIn([A-Z])', r'In \1', text_normalized)
+        # Try venue-style "In International/Empirical/Conference/..." (catches "In Empirical Methods", "InInternational", etc.)
         venue_start = re.search(
-            r'In\s+(?:International|Proceedings|Conference|Advances|Annual|Symposium)\s',
+            r'In\s*(?:International|Proceedings|Conference|ICLR|Advances|Annual|Symposium|Empirical)\s',
             text_normalized,
             re.IGNORECASE,
         )
@@ -275,7 +277,8 @@ class CitationExtractor:
             if re.search(r'[a-zA-Z]In$', before_venue):
                 before_venue = before_venue[:-2].rstrip()
             if ". " in before_venue:
-                title = before_venue.split(". ", 1)[-1].strip().rstrip(".")
+                # Use last segment (title); first period may be after "M." in "Alexander M. Rush"
+                title = before_venue.split(". ")[-1].strip().rstrip(".")
             else:
                 title = self._strip_leading_authors_from_title(before_venue)
             if title:
@@ -286,7 +289,7 @@ class CitationExtractor:
             if sep in text_normalized:
                 before_venue = text_normalized.split(sep, 1)[0].strip()
                 if ". " in before_venue:
-                    title = before_venue.split(". ", 1)[-1].strip().rstrip(".")
+                    title = before_venue.split(". ")[-1].strip().rstrip(".")
                 else:
                     title = self._strip_leading_authors_from_title(before_venue)
                 if title:
@@ -300,7 +303,7 @@ class CitationExtractor:
             sep = "? In " if "? In " in text else "? In"
             before_venue = text.split(sep)[0].strip().rstrip("?")
             if ". " in before_venue:
-                title = before_venue.split(". ", 1)[-1].strip().rstrip("?")
+                title = before_venue.split(". ")[-1].strip().rstrip("?")
             else:
                 # No period: "Authors Title?" - strip leading author block (e.g. "Name and Name ")
                 title = self._strip_leading_authors_from_title(before_venue)
