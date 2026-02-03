@@ -115,6 +115,8 @@ class MultiSourceVerifier:
             self._log(
                 f"[{citation.number}] Trying title search: {citation.title[:50]}..."
             )
+            if self.verbose:
+                self._log(f"[{citation.number}] Full title: {citation.title!r}")
 
             # Check cache first
             if self.cache:
@@ -633,7 +635,10 @@ class MultiSourceVerifier:
         if not title1 or not title2:
             return 0.0
 
-        # Normalize
+        # Normalize whitespace (collapse newlines/spaces from PDFs)
+        title1 = re.sub(r"\s+", " ", str(title1).strip())
+        title2 = re.sub(r"\s+", " ", str(title2).strip())
+        # Remove punctuation and lowercase for comparison
         t1 = re.sub(r"[^\w\s]", "", title1.lower())
         t2 = re.sub(r"[^\w\s]", "", title2.lower())
 

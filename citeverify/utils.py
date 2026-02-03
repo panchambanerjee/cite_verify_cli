@@ -114,6 +114,7 @@ def fix_concatenated_words(text: str) -> str:
         'semantic', 'syntactic', 'encoder', 'decoder', 'embedding', 'embeddings',
         'representation', 'representations', 'algorithms', 'algorithm', 'gpus',
         'gpu', 'limits', 'exploring', 'international', 'conference',
+        'active', 'memory', 'replace',
     }
     
     for word in words:

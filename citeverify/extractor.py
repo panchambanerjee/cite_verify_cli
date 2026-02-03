@@ -109,7 +109,8 @@ class CitationExtractor:
         citations = []
         
         # Try numbered citations first: [1], [2], etc.
-        numbered_pattern = r'\[(\d+)\]\s*(.+?)(?=\[\d+\]|$)'
+        # Stop at next "[n]" or at newline followed by "n." / "n)" (alternate numbering)
+        numbered_pattern = r'\[(\d+)\]\s*(.+?)(?=\[\d+\]|\n\s*\d+[.)]\s|$)'
         numbered_matches = re.findall(numbered_pattern, ref_section, re.DOTALL)
         
         if numbered_matches:
@@ -138,7 +139,11 @@ class CitationExtractor:
     
     def _parse_single_citation(self, text: str, number: str) -> Citation:
         """Extract metadata from a single citation string."""
-        
+        # Strip leading "[n] " if present (defensive: some split paths may include it)
+        text = re.sub(r'^\s*\[\d+\]\s*', '', text.strip()).strip()
+        if not text:
+            return Citation(number=number, raw_text=text, title=None, authors=None, year=None, doi=None, arxiv_id=None, url=None, journal=None)
+
         # Extract DOI
         doi_match = re.search(r'10\.\d{4,}/[^\s\)]+', text)
         doi = None
@@ -242,11 +247,9 @@ class CitationExtractor:
         # Strategy 2: Title between author block and journal/year
         # Look for pattern: "Authors. Title. Journal/venue"
         # Authors typically end with a period after last name or "et al."
-        
-        # Find the first period that's likely after authors
-        # (followed by a capital letter, indicating start of title)
+        # Use Unicode-friendly letter class so names like Łukasz match
         author_end_match = re.search(
-            r'(?:et\s+al\.|[A-Z][a-z]+)\.\s+([A-Z][^.]*(?:\.[^.]*)*?)(?:\.\s*(?:In\s|CoRR|arXiv|Proceedings|Journal|Trans\.|IEEE|ACM|\d{4}))',
+            r'(?:et\s+al\.|[A-Za-z\u00C0-\u024F][a-z\u00C0-\u024F]*)\.\s+([A-Z][^.]*(?:\.[^.]*)*?)(?:\.\s*(?:In\s|CoRR|arXiv|Proceedings|Journal|Trans\.|IEEE|ACM|\d{4}))',
             text,
             re.IGNORECASE
         )
@@ -256,6 +259,55 @@ class CitationExtractor:
             title = title.rstrip('.')
             if len(title) > 10:
                 return clean_title(title)
+
+        # Strategy 2d: "Authors. Title. In Venue..." or "Authors. Title In Venue..." (venue delimiter)
+        # PDFs often drop the period/space before "In" (e.g. "algorithmsIn International"); normalize whitespace
+        text_normalized = re.sub(r'\s+', ' ', text)
+        # Try venue-style "In International/Proceedings/Conference..." (catches "algorithmsIn International" when PDF drops space)
+        venue_start = re.search(
+            r'In\s+(?:International|Proceedings|Conference|Advances|Annual|Symposium)\s',
+            text_normalized,
+            re.IGNORECASE,
+        )
+        if venue_start:
+            before_venue = text_normalized[: venue_start.start()].strip()
+            # PDF may merge title with "In": e.g. "algorithmsIn" -> drop trailing "In"
+            if re.search(r'[a-zA-Z]In$', before_venue):
+                before_venue = before_venue[:-2].rstrip()
+            if ". " in before_venue:
+                title = before_venue.split(". ", 1)[-1].strip().rstrip(".")
+            else:
+                title = self._strip_leading_authors_from_title(before_venue)
+            if title:
+                title = self._strip_journal_volume_from_title(title)
+                if len(title) > 10 and not self._looks_like_venue(title):
+                    return clean_title(title)
+        for sep in (". In ", " In "):
+            if sep in text_normalized:
+                before_venue = text_normalized.split(sep, 1)[0].strip()
+                if ". " in before_venue:
+                    title = before_venue.split(". ", 1)[-1].strip().rstrip(".")
+                else:
+                    title = self._strip_leading_authors_from_title(before_venue)
+                if title:
+                    title = self._strip_journal_volume_from_title(title)
+                    if len(title) > 10 and not self._looks_like_venue(title):
+                        return clean_title(title)
+                break
+        
+        # Strategy 2c: "Authors. Title? In Venue..." or "Authors Title? In Venue..." (no period)
+        if "? In " in text or "? In" in text:
+            sep = "? In " if "? In " in text else "? In"
+            before_venue = text.split(sep)[0].strip().rstrip("?")
+            if ". " in before_venue:
+                title = before_venue.split(". ", 1)[-1].strip().rstrip("?")
+            else:
+                # No period: "Authors Title?" - strip leading author block (e.g. "Name and Name ")
+                title = self._strip_leading_authors_from_title(before_venue)
+            if title:
+                title = self._strip_journal_volume_from_title(title)
+                if len(title) > 10 and not self._looks_like_venue(title):
+                    return clean_title(title)
         
         # Strategy 2b: "Authors. Title, year." or "Authors. Title? In Venue, year."
         if year:
@@ -266,50 +318,97 @@ class CitationExtractor:
             )
             if title_comma_year:
                 title = title_comma_year.group(1).strip().rstrip('.,')
-                # Strip venue if captured (e.g. "Title? In Advances..." or "Title. In Proc.")
                 if ". In " in title or "? In " in title:
                     title = re.split(r'[.?]\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.?')
-                if len(title) > 10:
+                title = self._strip_journal_volume_from_title(title)
+                if len(title) > 10 and not self._looks_like_venue(title):
                     return clean_title(title)
         
         # Strategy 3: Find sentence-like text between periods
-        # Split by periods and find the longest segment that looks like a title
+        # Split by periods and find the best segment that looks like a title
         sentences = re.split(r'\.\s+', text)
         
         # Skip first segment (likely authors) and last segment (likely venue/year)
         if len(sentences) > 2:
-            # Look for the title among middle segments
             candidates = []
-            for i, sent in enumerate(sentences[1:-1], 1):
+            for sent in sentences[1:-1]:
                 sent = sent.strip()
-                # Title candidates: start with capital, reasonable length, not a venue
-                if (sent and 
-                    sent[0].isupper() and 
+                # Skip venue/volume segments (e.g. "Neural computation, 9(8):1735–1780, 1997")
+                if re.search(r',\s*\d+\(\d+\):\s*\d+', sent):
+                    continue
+                if (sent and
+                    sent[0].isupper() and
                     10 < len(sent) < 200 and
                     not re.match(r'^(In\s|Proceedings|Journal|Trans\.|IEEE|ACM|CoRR|arXiv)', sent, re.IGNORECASE)):
                     candidates.append((len(sent), sent))
             
             if candidates:
-                # Return the longest candidate
                 candidates.sort(reverse=True)
-                return clean_title(candidates[0][1])
+                title = self._strip_journal_volume_from_title(candidates[0][1])
+                if len(title) > 10 and not self._looks_like_venue(title):
+                    return clean_title(title)
         
-        # Strategy 4: Fallback - text before year minus author-like prefix
+        # Strategy 4: Fallback - text before year; take last segment after a period that looks like a title
         if year:
             year_pos = text.find(str(year))
             if year_pos > 0:
                 before_year = text[:year_pos]
-                # Try to find title after first period
-                period_match = re.search(r'\.\s*(.+?)$', before_year)
-                if period_match:
-                    title = period_match.group(1).strip().rstrip('.,')
-                    # Strip venue that was captured (e.g. "Title. In Proc." or "Title? In Advances...")
-                    if ". In " in title or "? In " in title:
-                        title = re.split(r'[.?]\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.?')
-                    if len(title) > 10:
-                        return clean_title(title)
+                # Segments after periods (skip first = authors)
+                segments = re.split(r'\.\s+', before_year)
+                # Try from last segment backward (venue often last, title before it)
+                for seg in reversed(segments[1:]):
+                    seg = seg.strip().rstrip('.,')
+                    if ". In " in seg or "? In " in seg:
+                        seg = re.split(r'[.?]\s+In\s+', seg, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.?')
+                    seg = self._strip_journal_volume_from_title(seg)
+                    if len(seg) > 10 and not self._looks_like_venue(seg):
+                        return clean_title(seg)
         
         return None
+    
+    def _looks_like_venue(self, title: str) -> bool:
+        """True if the string is clearly a venue name, not a paper title."""
+        if not title or len(title) < 15:
+            return False
+        t = title.strip().lower()
+        # Common venue phrase starts (not paper titles)
+        if re.match(r"^(in\s+)?(international|proceedings|conference|advances|annual|symposium|journal|transactions|workshop)\s", t):
+            return True
+        # Venue abbreviations in parens as the main content
+        if re.search(r"^[^()]*\s*\((?:iclr|neurips|nips|icml|acl|emnlp|cvpr|eccv|iccv)\)\s*\.?$", t):
+            return True
+        return False
+
+    def _strip_journal_volume_from_title(self, title: str) -> str:
+        """Remove trailing '. Journal, vol(issue):pages' and leading 'In ' (venue fragment)."""
+        if not title:
+            return title
+        title = title.strip()
+        # Strip leading "In " (venue fragment that sometimes gets into title)
+        if title.lower().startswith("in "):
+            title = title[3:].strip()
+        # Match ". Journal name, 9(8):1735–1780" or similar at end
+        m = re.search(r'^(.+?)\.\s+[A-Za-z][^.]*,\s*\d+\(\d+\):\s*\d+', title)
+        if m:
+            return m.group(1).strip().rstrip('.')
+        return title
+
+    def _strip_leading_authors_from_title(self, text: str) -> str:
+        """
+        When format is "Author1 and Author2 Title" (no period), try to strip leading author block.
+        Heuristic: after last " and ", if the remainder starts with two capitalized words (name),
+        take the rest as title.
+        """
+        if not text or " and " not in text:
+            return text
+        parts = text.split(" and ", 1)
+        if len(parts) != 2:
+            return text
+        remainder = parts[1].strip()
+        words = remainder.split()
+        if len(words) >= 3 and words[0][0].isupper() and words[1][0].isupper():
+            return " ".join(words[2:]).strip()
+        return remainder
     
     def _extract_authors(self, text: str) -> list:
         """
