@@ -252,6 +252,18 @@ class CitationExtractor:
             if len(title) > 10:
                 return clean_title(title)
         
+        # Strategy 2b: "Authors. Title, year." (no journal, title ends with comma + year)
+        if year:
+            title_comma_year = re.search(
+                r'\.\s+(.+),\s*(?:19|20)\d{2}\s*\.?\s*$',
+                text,
+                re.DOTALL,
+            )
+            if title_comma_year:
+                title = title_comma_year.group(1).strip().rstrip('.,')
+                if len(title) > 10:
+                    return clean_title(title)
+        
         # Strategy 3: Find sentence-like text between periods
         # Split by periods and find the longest segment that looks like a title
         sentences = re.split(r'\.\s+', text)
@@ -283,6 +295,9 @@ class CitationExtractor:
                 period_match = re.search(r'\.\s*(.+?)$', before_year)
                 if period_match:
                     title = period_match.group(1).strip().rstrip('.,')
+                    # Strip venue that was captured (e.g. "Title. In Proc. of NAACL")
+                    if ". In " in title or ". In Proc" in title:
+                        title = re.split(r'\.\s+In\s+', title, maxsplit=1, flags=re.IGNORECASE)[0].strip().rstrip('.')
                     if len(title) > 10:
                         return clean_title(title)
         

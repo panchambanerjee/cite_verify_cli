@@ -133,7 +133,12 @@ class MultiSourceVerifier:
             ]
 
             if valid_results:
-                best = max(valid_results, key=lambda r: r.confidence)
+                # Prefer arXiv when above threshold (title match on arXiv is authoritative)
+                arxiv_results = [r for r in valid_results if "arxiv" in (r.verified_sources or [])]
+                if arxiv_results:
+                    best = max(arxiv_results, key=lambda r: r.confidence)
+                else:
+                    best = max(valid_results, key=lambda r: r.confidence)
                 source = best.verified_sources[0] if best.verified_sources else "unknown"
                 self._log(
                     f"[{citation.number}] ✓ Found via {source} "
@@ -476,10 +481,10 @@ class MultiSourceVerifier:
             try:
                 import arxiv
 
-                # Search arXiv by title
+                # Search arXiv by title (fetch more to find papers that rank lower in relevance)
                 search = arxiv.Search(
                     query=citation.title,
-                    max_results=5,
+                    max_results=15,
                     sort_by=arxiv.SortCriterion.Relevance,
                 )
 
@@ -495,11 +500,8 @@ class MultiSourceVerifier:
                 if not best_match or best_similarity < self.threshold:
                     return None
 
-                status = (
-                    VerificationStatus.VERIFIED
-                    if best_similarity > 0.8
-                    else VerificationStatus.PARTIAL
-                )
+                # arXiv match by title is authoritative: treat as VERIFIED when above threshold
+                status = VerificationStatus.VERIFIED
 
                 # Extract arXiv ID from entry_id (e.g., "http://arxiv.org/abs/1234.56789v1")
                 arxiv_id = None
