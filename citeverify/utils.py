@@ -48,14 +48,35 @@ def normalize_arxiv_id(arxiv_id: str) -> Optional[str]:
 
 
 def extract_year_from_text(text: str) -> Optional[int]:
-    """Extract year (4-digit) from text."""
-    year_match = re.search(r'\b(19|20)\d{2}\b', text)
-    if year_match:
-        try:
-            return int(year_match.group(0))
-        except ValueError:
-            pass
-    return None
+    """Extract publication year (4-digit) from text. Prefer year at end, skip page ranges like 1929–1958."""
+    matches = list(re.finditer(r'\b(19|20)\d{2}\b', text))
+    if not matches:
+        return None
+    # Prefer last year (publication year often at end); skip if in page range pattern like "15(1):1929–1958"
+    for m in reversed(matches):
+        year_str = m.group(0)
+        year = int(year_str)
+        start, end = m.start(), m.end()
+        before = text[max(0, start - 3) : start]
+        after = text[end : end + 5] if end + 5 <= len(text) else ""
+        # Skip if looks like page number: preceded by : and followed by – or - and digits
+        if re.search(r'[:(]\s*$', before) and re.match(r'^[\s–\-]\s*\d', after):
+            continue
+        return year
+    return int(matches[-1].group(0))
+
+
+# Common short phrase concatenations (space dropped in PDF extraction)
+_CONCATENATED_PHRASES = [
+    ('asa', 'as a'),
+    ('inthe', 'in the'),
+    ('ofthe', 'of the'),
+    ('tothe', 'to the'),
+    ('forthe', 'for the'),
+    ('withthe', 'with the'),
+    ('aswell', 'as well'),
+    ('suchas', 'such as'),
+]
 
 
 def clean_title(title: str) -> str:
@@ -68,6 +89,11 @@ def clean_title(title: str) -> str:
     
     # Remove extra whitespace
     title = re.sub(r'\s+', ' ', title)
+    
+    # Fix common short phrase concatenations (space dropped in PDFs)
+    # e.g. "Grammar asa foreign language" -> "Grammar as a foreign language"
+    for bad, good in _CONCATENATED_PHRASES:
+        title = re.sub(r'\b' + re.escape(bad) + r'\b', good, title, flags=re.IGNORECASE)
     
     # Fix concatenated words from PDF extraction
     # This handles cases like "networkgrammars" -> "network grammars"
@@ -114,12 +140,16 @@ def fix_concatenated_words(text: str) -> str:
         'semantic', 'syntactic', 'encoder', 'decoder', 'embedding', 'embeddings',
         'representation', 'representations', 'algorithms', 'algorithm', 'gpus',
         'gpu', 'limits', 'exploring', 'international', 'conference',
-        'active', 'memory', 'replace',
+        'active', 'memory', 'replace', 'overfitting',
     }
-    
+
     for word in words:
         # Skip short words
         if len(word) <= 8:
+            fixed_words.append(word)
+            continue
+        # Keep whole if already a valid compound (e.g. overfitting, not "over fitting")
+        if word.lower() in common_words:
             fixed_words.append(word)
             continue
         # Process long words: lowercase for split logic, but also handle mixed-case

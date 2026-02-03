@@ -6,7 +6,7 @@ import aiohttp
 from typing import Optional, List, Callable
 from difflib import SequenceMatcher
 from .models import Citation, VerificationResult, VerificationStatus
-from .utils import normalize_doi, normalize_arxiv_id
+from .utils import normalize_doi, normalize_arxiv_id, clean_title
 from .cache import VerificationCache
 
 
@@ -112,24 +112,27 @@ class MultiSourceVerifier:
 
         # Priority 3: Fuzzy search
         if citation.title:
+            # Normalize title (fix "asa"->"as a", etc.) before search
+            search_title = clean_title(citation.title)
+            search_citation = citation.model_copy(update={"title": search_title})
             self._log(
-                f"[{citation.number}] Trying title search: {citation.title[:50]}..."
+                f"[{citation.number}] Trying title search: {search_title[:50]}..."
             )
             if self.verbose:
-                self._log(f"[{citation.number}] Full title: {citation.title!r}")
+                self._log(f"[{citation.number}] Full title: {search_title!r}")
 
             # Check cache first
             if self.cache:
-                cached = self.cache.get("title", citation.title)
+                cached = self.cache.get("title", search_title)
                 if cached:
                     self._log(f"[{citation.number}] Found in cache (title)")
                     return cached
 
             results = await asyncio.gather(
-                self._search_crossref(citation),
-                self._search_semantic_scholar(citation),
-                self._search_arxiv(citation),
-                self._search_openalex(citation),
+                self._search_crossref(search_citation),
+                self._search_semantic_scholar(search_citation),
+                self._search_arxiv(search_citation),
+                self._search_openalex(search_citation),
                 return_exceptions=True,
             )
 
@@ -150,12 +153,12 @@ class MultiSourceVerifier:
                     f"(similarity: {best.confidence:.2f})"
                 )
                 if self.cache:
-                    self.cache.set("title", citation.title, best)
+                    self.cache.set("title", search_title, best)
                 return best
 
             # Fallback: if title has a colon, retry with the part after it (e.g. "Penn Treebank" from "Building...: The Penn Treebank")
-            fallback_phrase = self._extract_subtitle_phrase(citation.title)
-            if fallback_phrase and fallback_phrase != citation.title:
+            fallback_phrase = self._extract_subtitle_phrase(search_title)
+            if fallback_phrase and fallback_phrase != search_title:
                 self._log(
                     f"[{citation.number}] Retrying with subtitle phrase: {fallback_phrase[:50]}..."
                 )
@@ -178,7 +181,7 @@ class MultiSourceVerifier:
                         f"similarity: {best.confidence:.2f})"
                     )
                     if self.cache:
-                        self.cache.set("title", citation.title, best)
+                        self.cache.set("title", search_title, best)
                     return best
 
             # Fallback: retry with title + "natural language inference" or end of journal/venue
@@ -187,16 +190,16 @@ class MultiSourceVerifier:
                 journal_lower = citation.journal.lower()
                 # EMNLP/ACL papers on NLI often have "Natural Language Inference" in title; venue says "Natural Language Processing"
                 if "natural language" in journal_lower:
-                    extended = f"{citation.title} natural language inference".strip()
+                    extended = f"{search_title} natural language inference".strip()
                 else:
                     journal_words = citation.journal.strip().split()
-                    extended = f"{citation.title} {' '.join(journal_words[-3:])}".strip() if len(journal_words) >= 3 else citation.title
+                    extended = f"{search_title} {' '.join(journal_words[-3:])}".strip() if len(journal_words) >= 3 else search_title
             # Also try "attention model" + "natural language inference" when journal missing (common NLI paper pattern)
-            if not extended and citation.title:
-                t = citation.title.lower()
+            if not extended and search_title:
+                t = search_title.lower()
                 if "attention" in t and "model" in t:
-                    extended = f"{citation.title} natural language inference".strip()
-            if extended and extended != citation.title and len(extended) > len(citation.title) + 5:
+                    extended = f"{search_title} natural language inference".strip()
+            if extended and extended != search_title and len(extended) > len(search_title) + 5:
                 self._log(
                     f"[{citation.number}] Retrying with title + venue: {extended[:55]}..."
                 )
@@ -219,7 +222,7 @@ class MultiSourceVerifier:
                         f"similarity: {best.confidence:.2f})"
                     )
                     if self.cache:
-                        self.cache.set("title", citation.title, best)
+                        self.cache.set("title", search_title, best)
                     return best
 
             self._log(
@@ -434,7 +437,7 @@ class MultiSourceVerifier:
 
                     status = (
                         VerificationStatus.VERIFIED
-                        if similarity > 0.8
+                        if similarity >= 0.75
                         else VerificationStatus.PARTIAL
                     )
 
@@ -656,7 +659,7 @@ class MultiSourceVerifier:
 
                     status = (
                         VerificationStatus.VERIFIED
-                        if similarity > 0.8
+                        if similarity >= 0.75
                         else VerificationStatus.PARTIAL
                     )
 
