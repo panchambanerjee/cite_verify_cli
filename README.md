@@ -162,8 +162,9 @@ citeverify/
 │   └── utils.py            # Helper functions
 ├── tests/
 │   ├── __init__.py
-│   ├── test_extractor.py
-│   ├── test_verifier.py
+│   ├── test_utils.py       # Utils, clean_title, extract_year, fix_concatenated
+│   ├── test_extractor.py   # Extraction + edge cases (Unicode, venue delimiter, etc.)
+│   ├── test_verifier.py    # Verification + edge cases (prefix match, subtitle)
 │   ├── test_downloader.py
 │   └── fixtures/
 ├── pyproject.toml
@@ -171,6 +172,27 @@ citeverify/
 ├── .env.example
 └── .gitignore
 ```
+
+## Edge Cases Handled
+
+CitationVerify handles many PDF extraction quirks and verification edge cases:
+
+**Extraction (from PDF text):**
+- **Concatenated phrases** – Spaces dropped at line breaks: "Grammar asa foreign language" → "Grammar as a foreign language"; "inthe", "ofthe", "asa" etc. are fixed
+- **Year in page ranges** – Skips 1929 in "15(1):1929–1958" and correctly extracts 2014 as publication year
+- **Unicode author names** – Recognizes names like Łukasz, Óscar, etc. (non-ASCII)
+- **Venue delimiters** – Handles "Title. In International Conference..." and "TitleInInternational..." (missing space restored)
+- **Venue-like rejection** – Avoids treating venue text ("In International Conference...") as the paper title
+- **Leading reference numbers** – Strips "[17]" or "[37]" from citation text before parsing
+- **Compound words** – Preserves "overfitting" (does not split to "over fitting")
+- **Hyphenated line breaks** – Joins "im- age" → "image"
+
+**Verification:**
+- **Title normalization** – Applies `clean_title` before search so "asa" → "as a" is fixed
+- **Shortened titles** – Prefix match: "A decomposable attention model" matches "A Decomposable Attention Model for Natural Language Inference" (0.95)
+- **Subtitle fallback** – If main title fails, retries with part after colon (e.g. "Penn Treebank" from "Building...: The Penn Treebank")
+- **Title + venue fallback** – Retries with title + "natural language inference" or journal words when venue is known
+- **VERIFIED threshold** – Similarity ≥ 0.75 marks as VERIFIED (not just PARTIAL)
 
 ## Quality Scoring
 
