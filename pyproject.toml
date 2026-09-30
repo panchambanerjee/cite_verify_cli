@@ -3,20 +3,36 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "citeverify"
+name = "verify-cite"
 version = "0.1.0"
 description = "Verify citations in research papers from the command line"
-authors = [{name = "Your Name", email = "your@email.com"}]
+authors = [
+    {name = "Panchajanya Banerjee", email = "panchajanya.banerjee@gmail.com"},
+]
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-
+keywords = ["citations", "bibliography", "arxiv", "crossref", "research", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing",
+]
 dependencies = [
     "click>=8.1.0",
     "rich>=13.0.0",
     "pdfplumber>=0.11.0",
     "arxiv>=2.1.0",
-    "habanero>=1.2.6",
     "aiohttp>=3.9.0",
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
@@ -29,10 +45,21 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "black>=24.0.0",
     "ruff>=0.1.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/panchambanerjee/cite_verify_cli"
+Repository = "https://github.com/panchambanerjee/cite_verify_cli"
+Issues = "https://github.com/panchambanerjee/cite_verify_cli/issues"
+Documentation = "https://github.com/panchambanerjee/cite_verify_cli/blob/main/docs/tutorial.md"
+
 [project.scripts]
-citeverify = "citeverify.cli:main"
+verify-cite = "verify_cite.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["verify_cite"]
 
 [tool.black]
 line-length = 100

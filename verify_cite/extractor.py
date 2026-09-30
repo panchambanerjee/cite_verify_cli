@@ -37,7 +37,8 @@ class CitationExtractor:
         if not ref_section:
             raise ValueError(
                 "Could not find references section. "
-                "Try using --interactive mode to manually select citations."
+                "The PDF may not mark References/Bibliography clearly, "
+                "or the header may be missing from extracted text."
             )
         
         # Parse individual citations
@@ -72,37 +73,42 @@ class CitationExtractor:
         return "Unknown Title"
     
     def _find_references_section(self, text: str) -> str:
-        """Find the references/bibliography section."""
-        # Common section headers
-        patterns = [
-            r'\n\s*(References|REFERENCES)\s*\n',
-            r'\n\s*(Bibliography|BIBLIOGRAPHY)\s*\n',
-            r'\n\s*(Works Cited|WORKS CITED)\s*\n',
-            r'\n\s*(Literature|LITERATURE)\s*\n',
+        """Find the references/bibliography section.
+
+        Handles both a header alone on a line and a header glued to the first
+        citation (common pdfplumber artifact), e.g. ``References KevinClark,...``.
+        """
+        # Header on its own line, or immediately followed by author/citation text
+        header_re = re.compile(
+            r"(?:^|\n)\s*"
+            r"(References|REFERENCE|Bibliography|BIBLIOGRAPHY|Works Cited|WORKS CITED|Literature|LITERATURE)"
+            r"(?=\s*(?:\n|[A-Z\u00C0-\u024F\[]))",
+            re.IGNORECASE,
+        )
+        match = header_re.search(text)
+        if not match:
+            return ""
+
+        start = match.end()
+        # Skip whitespace / a single newline after the header word
+        while start < len(text) and text[start] in " \t\r":
+            start += 1
+        if start < len(text) and text[start] == "\n":
+            start += 1
+
+        end_patterns = [
+            r"\n\s*(Appendix|APPENDIX)",
+            r"\n\s*(Acknowledgments|ACKNOWLEDGMENTS|Acknowledgements|ACKNOWLEDGEMENTS)",
+            r"\n\s*(Supplementary|SUPPLEMENTARY)",
         ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                start = match.end()
-                
-                # Find where references end (common end markers)
-                end_patterns = [
-                    r'\n\s*(Appendix|APPENDIX)',
-                    r'\n\s*(Acknowledgments|ACKNOWLEDGMENTS)',
-                    r'\n\s*(Supplementary|SUPPLEMENTARY)',
-                ]
-                
-                end = len(text)
-                for end_pattern in end_patterns:
-                    end_match = re.search(end_pattern, text[start:], re.IGNORECASE)
-                    if end_match:
-                        end = start + end_match.start()
-                        break
-                
-                return text[start:end].strip()
-        
-        return ""
+        end = len(text)
+        for end_pattern in end_patterns:
+            end_match = re.search(end_pattern, text[start:], re.IGNORECASE)
+            if end_match:
+                end = start + end_match.start()
+                break
+
+        return text[start:end].strip()
     
     def _parse_citations(self, ref_section: str) -> List[Citation]:
         """Parse individual citations from references section."""
@@ -122,18 +128,47 @@ class CitationExtractor:
             # Pattern for numbered citations like "1. " or "1) "
             alt_pattern = r'^\s*(\d+)[.)]\s*(.+?)(?=^\s*\d+[.)]|$)'
             alt_matches = re.findall(alt_pattern, ref_section, re.MULTILINE | re.DOTALL)
-            
+            # Only treat as numbered list if indices look like citation numbers
+            # (not years like 2018, not page numbers like 1543).
+            def _looks_like_citation_index(num: str) -> bool:
+                try:
+                    n = int(num)
+                except ValueError:
+                    return False
+                return 1 <= n <= 500
+
+            alt_matches = [
+                (num, text)
+                for num, text in alt_matches
+                if _looks_like_citation_index(num)
+            ]
+            # Prefer sequential-ish lists (median index small); drop if mostly huge nums
+            if alt_matches:
+                nums = [int(n) for n, _ in alt_matches]
+                if min(nums) > 50 or max(nums) > 400:
+                    alt_matches = []
+
             if alt_matches:
                 for num, text in alt_matches:
                     citation = self._parse_single_citation(text.strip(), num)
                     citations.append(citation)
             else:
-                # Fallback: split by double newlines
+                # Alphabetical / unnumbered: split on blank lines, or on lines that
+                # start with a capital letter after a previous citation ended.
                 parts = re.split(r'\n\s*\n', ref_section)
+                parts = [p.strip() for p in parts if p.strip()]
+                if len(parts) <= 1:
+                    # Single block: split before lines that look like a new author start
+                    # (capital letter after a year/period line break is unreliable;
+                    # use ".\\nName" or start-of-line Capital + lowercase surname pattern)
+                    chunks = re.split(
+                        r'(?=\n(?=[A-Z\u00C0-\u024F][a-z\u00C0-\u024F]+(?:\s|,)))',
+                        ref_section,
+                    )
+                    parts = [p.strip() for p in chunks if p.strip()]
                 for i, part in enumerate(parts, 1):
-                    if part.strip():
-                        citation = self._parse_single_citation(part.strip(), str(i))
-                        citations.append(citation)
+                    citation = self._parse_single_citation(part.strip(), str(i))
+                    citations.append(citation)
         
         return citations
     

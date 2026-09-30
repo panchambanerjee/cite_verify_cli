@@ -18,18 +18,18 @@ class VerificationCache:
         Initialize cache.
 
         Args:
-            cache_dir: Directory to store cache database. Defaults to ./.citeverify/
+            cache_dir: Directory to store cache database. Defaults to ./.verify_cite/
             ttl_days: Time-to-live for cache entries in days
         """
         if cache_dir is None:
             # Try home directory first, fall back to current directory
-            home_cache = os.path.join(Path.home(), ".citeverify")
+            home_cache = os.path.join(Path.home(), ".verify_cite")
             try:
                 Path(home_cache).mkdir(parents=True, exist_ok=True)
                 cache_dir = home_cache
             except (PermissionError, OSError):
                 # Fall back to current directory
-                cache_dir = os.path.join(os.getcwd(), ".citeverify")
+                cache_dir = os.path.join(os.getcwd(), ".verify_cite")
 
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         self.db_path = os.path.join(cache_dir, "cache.db")

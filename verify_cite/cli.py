@@ -1,4 +1,4 @@
-"""Main CLI interface for CitationVerify."""
+"""Main CLI interface for verify-cite."""
 
 import asyncio
 import re
@@ -99,16 +99,16 @@ def main(
     - arXiv ID (2301.12345)
 
     Examples:
-      citeverify paper.pdf
-      citeverify https://arxiv.org/abs/2301.12345
-      citeverify 2301.12345 --output ./refs
-      citeverify paper.pdf --threshold 0.6 --verbose
-      citeverify paper.pdf --format bibtex > refs.bib
+      verify-cite paper.pdf
+      verify-cite https://arxiv.org/abs/2301.12345
+      verify-cite 2301.12345 --output ./refs
+      verify-cite paper.pdf --threshold 0.6 --verbose
+      verify-cite paper.pdf --format bibtex > refs.bib
     """
     from . import __version__
     from .cache import VerificationCache
 
-    console.print(f"[bold blue]CitationVerify v{__version__}[/bold blue]")
+    console.print(f"[bold blue]verify-cite v{__version__}[/bold blue]")
     console.print("━" * 60)
 
     # Handle cache clearing
@@ -240,10 +240,19 @@ async def run_pipeline(
                 log_callback=log_callback,
             )
 
-            for citation in verified_citations:
-                result = await verifier.verify(citation)
-                citation.verification = result
-                progress.update(verify_task, advance=1)
+            # Parallel verification (bounded) — much faster than one-by-one
+            concurrency = min(5, max(1, len(verified_citations)))
+            sem = asyncio.Semaphore(concurrency)
+
+            async def _verify_one(citation: VerifiedCitation) -> None:
+                async with sem:
+                    result = await verifier.verify(citation)
+                    citation.verification = result
+                    progress.update(verify_task, advance=1)
+
+            await asyncio.gather(
+                *(_verify_one(c) for c in verified_citations)
+            )
 
             await verifier.close()
 

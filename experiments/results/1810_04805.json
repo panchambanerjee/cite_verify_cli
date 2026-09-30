@@ -1,0 +1,20 @@
+{
+  "arxiv_id": "1810.04805",
+  "label": "BERT",
+  "paper_title": "Unknown Title",
+  "extraction_error": "Could not find references section. Try using --interactive mode to manually select citations.",
+  "duration_seconds": 2.39,
+  "citations_extracted": 0,
+  "with_title": 0,
+  "with_doi": 0,
+  "with_arxiv_id": 0,
+  "status_counts": {
+    "verified": 0,
+    "partial": 0,
+    "unverified": 0,
+    "error": 0,
+    "missing": 0
+  },
+  "mean_quality_score": null,
+  "citations": []
+}

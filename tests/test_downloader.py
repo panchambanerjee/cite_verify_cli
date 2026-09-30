@@ -1,8 +1,8 @@
 """Tests for PDF downloader."""
 
 import pytest
-from citeverify.models import Citation, VerificationResult, VerificationStatus
-from citeverify.downloader import SmartPDFDownloader
+from verify_cite.models import Citation, VerificationResult, VerificationStatus
+from verify_cite.downloader import SmartPDFDownloader
 
 
 @pytest.fixture

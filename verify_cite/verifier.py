@@ -87,7 +87,7 @@ class MultiSourceVerifier:
                     f"[{citation.number}] DOI lookup failed: {result.discrepancies}"
                 )
 
-        # Priority 2: arXiv ID lookup
+        # Priority 2: arXiv ID lookup (with retries — prefer ID over mangled-title search)
         if citation.arxiv_id:
             self._log(f"[{citation.number}] Trying arXiv ID: {citation.arxiv_id}")
 
@@ -341,8 +341,10 @@ class MultiSourceVerifier:
                     discrepancies=[f"CrossRef error: {str(e)}"],
                 )
 
-    async def _verify_via_arxiv(self, arxiv_id: str) -> VerificationResult:
-        """Verify using arXiv API."""
+    async def _verify_via_arxiv(
+        self, arxiv_id: str, max_retries: int = 4
+    ) -> VerificationResult:
+        """Verify using arXiv API, with backoff on HTTP 429 / transient errors."""
         arxiv_id = normalize_arxiv_id(arxiv_id)
         if not arxiv_id:
             return VerificationResult(
@@ -351,40 +353,70 @@ class MultiSourceVerifier:
                 discrepancies=["Invalid arXiv ID format"],
             )
 
-        async with self.rate_limits["arxiv"]:
-            try:
-                import arxiv
+        last_error = None
+        for attempt in range(max_retries):
+            async with self.rate_limits["arxiv"]:
+                try:
+                    import arxiv
 
-                search = arxiv.Search(id_list=[arxiv_id])
-                paper = next(search.results())
+                    # Prefer Client.results — Search.results is deprecated
+                    client = arxiv.Client(
+                        page_size=1,
+                        delay_seconds=3.0,
+                        num_retries=0,
+                    )
+                    search = arxiv.Search(id_list=[arxiv_id])
+                    paper = next(client.results(search))
 
-                return VerificationResult(
-                    status=VerificationStatus.VERIFIED,
-                    confidence=1.0,
-                    matched_title=paper.title,
-                    matched_authors=[a.name for a in paper.authors],
-                    matched_year=paper.published.year if paper.published else None,
-                    doi=paper.doi,
-                    arxiv_id=arxiv_id,
-                    verified_sources=["arxiv"],
-                    metadata={
-                        "abstract": paper.summary,
-                        "pdf_url": paper.pdf_url,
-                    },
-                )
+                    return VerificationResult(
+                        status=VerificationStatus.VERIFIED,
+                        confidence=1.0,
+                        matched_title=paper.title,
+                        matched_authors=[a.name for a in paper.authors],
+                        matched_year=paper.published.year if paper.published else None,
+                        doi=paper.doi,
+                        arxiv_id=arxiv_id,
+                        verified_sources=["arxiv"],
+                        metadata={
+                            "abstract": paper.summary,
+                            "pdf_url": paper.pdf_url,
+                        },
+                    )
 
-            except StopIteration:
-                return VerificationResult(
-                    status=VerificationStatus.UNVERIFIED,
-                    confidence=0.0,
-                    discrepancies=["arXiv ID not found"],
-                )
-            except Exception as e:
-                return VerificationResult(
-                    status=VerificationStatus.ERROR,
-                    confidence=0.0,
-                    discrepancies=[f"arXiv error: {str(e)}"],
-                )
+                except StopIteration:
+                    return VerificationResult(
+                        status=VerificationStatus.UNVERIFIED,
+                        confidence=0.0,
+                        discrepancies=["arXiv ID not found"],
+                    )
+                except Exception as e:
+                    last_error = e
+                    err_str = str(e)
+                    retryable = (
+                        "429" in err_str
+                        or "rate" in err_str.lower()
+                        or "timeout" in err_str.lower()
+                        or "timed out" in err_str.lower()
+                    )
+                    if retryable and attempt < max_retries - 1:
+                        wait = min(2 ** attempt, 30)
+                        self._log(
+                            f"arXiv lookup retry {attempt + 1}/{max_retries} "
+                            f"for {arxiv_id} after {wait}s ({err_str[:80]})"
+                        )
+                        await asyncio.sleep(wait)
+                        continue
+                    return VerificationResult(
+                        status=VerificationStatus.ERROR,
+                        confidence=0.0,
+                        discrepancies=[f"arXiv error: {err_str}"],
+                    )
+
+        return VerificationResult(
+            status=VerificationStatus.ERROR,
+            confidence=0.0,
+            discrepancies=[f"arXiv error: {last_error}"],
+        )
 
     async def _search_crossref(
         self, citation: Citation

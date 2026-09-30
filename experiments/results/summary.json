@@ -1,0 +1,59 @@
+[
+  {
+    "arxiv_id": "1706.03762",
+    "label": "Attention Is All You Need",
+    "paper_title": "Attention Is All You Need",
+    "extraction_error": null,
+    "duration_seconds": 359.11,
+    "citations_extracted": 40,
+    "with_title": 39,
+    "with_doi": 0,
+    "with_arxiv_id": 22,
+    "status_counts": {
+      "verified": 30,
+      "partial": 0,
+      "unverified": 10,
+      "error": 0,
+      "missing": 0
+    },
+    "mean_quality_score": 47.98
+  },
+  {
+    "arxiv_id": "1810.04805",
+    "label": "BERT",
+    "paper_title": "Unknown Title",
+    "extraction_error": "Could not find references section. Try using --interactive mode to manually select citations.",
+    "duration_seconds": 2.39,
+    "citations_extracted": 0,
+    "with_title": 0,
+    "with_doi": 0,
+    "with_arxiv_id": 0,
+    "status_counts": {
+      "verified": 0,
+      "partial": 0,
+      "unverified": 0,
+      "error": 0,
+      "missing": 0
+    },
+    "mean_quality_score": null
+  },
+  {
+    "arxiv_id": "1406.2661",
+    "label": "Generative Adversarial Nets",
+    "paper_title": "Generative Adversarial Nets",
+    "extraction_error": null,
+    "duration_seconds": 376.64,
+    "citations_extracted": 31,
+    "with_title": 29,
+    "with_doi": 0,
+    "with_arxiv_id": 3,
+    "status_counts": {
+      "verified": 9,
+      "partial": 1,
+      "unverified": 21,
+      "error": 0,
+      "missing": 0
+    },
+    "mean_quality_score": 30.52
+  }
+]

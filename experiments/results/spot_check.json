@@ -1,0 +1,78 @@
+{
+  "paper": "1706.03762 Attention Is All You Need",
+  "method": "Manual review of five verified and five unverified citations from experiments/results/1706_03762.json against known bibliographic identity.",
+  "verified_spot_checks": [
+    {
+      "number": "1",
+      "extracted_title": "Layernormalization",
+      "matched_title": "Layer Normalization",
+      "sources": ["arxiv"],
+      "assessment": "Correct paper. Extraction dropped spaces (Layernormalization) but arXiv ID lookup returned the right work with confidence 1.0."
+    },
+    {
+      "number": "2",
+      "extracted_title": "Neural machine translation byjointly learning toalign and translate",
+      "matched_title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+      "sources": ["arxiv"],
+      "assessment": "Correct paper (Bahdanau et al.). Title has PDF space artifacts; verified via arXiv ID."
+    },
+    {
+      "number": "6",
+      "extracted_title": "Xception: Deep learning with depthwise separable convolutions",
+      "matched_title": "Xception: Deep Learning with Depthwise Separable Convolutions",
+      "sources": ["arxiv"],
+      "assessment": "Correct paper. Extracted title is usable; match is exact aside from capitalization."
+    },
+    {
+      "number": "8",
+      "extracted_title": "Recurrent neural network grammars",
+      "matched_title": "Recurrent Neural Network Grammars",
+      "sources": ["arxiv"],
+      "assessment": "Correct paper. Prefix/title match at 0.95."
+    },
+    {
+      "number": "37",
+      "extracted_title": "Grammar asa foreign language",
+      "matched_title": "Grammar as a Foreign Language",
+      "sources": ["arxiv"],
+      "assessment": "Correct paper (Vinyals & Kaiser et al.). clean_title normalizes asa→as a; verified despite PDF concatenation."
+    }
+  ],
+  "unverified_spot_checks": [
+    {
+      "number": "21",
+      "extracted_title": "Factorizationtricks forLSTM networks",
+      "arxiv_id": "1703.10722",
+      "assessment": "Real paper (Kuchaiev & Ginsburg). Extracted arXiv ID is present, but verification fell through to title search and failed. Likely arXiv ID lookup failed under rate pressure during the long sequential run; title string is badly concatenated so fuzzy search cannot recover."
+    },
+    {
+      "number": "24",
+      "extracted_title": "Effectiveapproachesto attention based neural machine translation",
+      "arxiv_id": "1508.04025",
+      "assessment": "Real paper (Luong et al.). Same pattern: arXiv ID present in extraction, still marked unverified — ID path did not confirm, title too mangled for similarity ≥ 0.7."
+    },
+    {
+      "number": "25",
+      "extracted_title": "Computationallinguistics,19(2):313–330",
+      "arxiv_id": null,
+      "assessment": "False title extraction. Raw text is the Penn Treebank citation; parser took the journal/volume fragment as the title and missed the real title after the colon. True failure of extraction, not of the academic databases."
+    },
+    {
+      "number": "31",
+      "extracted_title": "Neural machine translation ofrarewords with subwordunits",
+      "arxiv_id": "1508.07909",
+      "assessment": "Real paper (Sennrich et al., BPE). arXiv ID extracted correctly; still unverified — again points to ID lookup miss + broken title similarity."
+    },
+    {
+      "number": "38",
+      "extracted_title": "Google’s neural machine translation system: Bridging thegap between humanand machine translation",
+      "arxiv_id": "1609.08144",
+      "assessment": "Real paper (Wu et al., GNMT). Title mostly recoverable; arXiv ID present. Unverified status is a pipeline miss rather than a fabricated citation."
+    }
+  ],
+  "takeaways": [
+    "Verified does not mean clean extraction: several verified rows have unreadable titles but correct identity via arXiv ID.",
+    "Unverified often still means a real paper: 4/5 spot-checked failures had valid arXiv IDs; only #25 is a pure parse failure.",
+    "BERT (1810.04805) failed earlier: pdfplumber text joins 'References' to the first citation on one line, so the references-section regex never fires."
+  ]
+}

@@ -1,24 +1,26 @@
-# Setup Instructions for CitationVerify
+# Setup Instructions for verify-cite
 
-This guide will walk you through setting up the CitationVerify CLI tool from scratch.
+This guide walks you through setting up the verify-cite CLI from scratch.
 
-## Step-by-Step Setup
+## Step-by-step setup
 
-### 1. Navigate to Project Directory
+### 1. Navigate to the project directory
 
 ```bash
-cd /Users/panchamb/Documents/Projects/micro_saas/cite_verify_cli
+cd /path/to/cite_verify_cli
 ```
 
-### 2. Create Virtual Environment
+### 2. Create a virtual environment
 
-**On macOS/Linux:**
+**macOS/Linux:**
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-**On Windows:**
+**Windows:**
+
 ```bash
 python -m venv venv
 venv\Scripts\activate
@@ -26,147 +28,99 @@ venv\Scripts\activate
 
 You should see `(venv)` in your terminal prompt after activation.
 
-### 3. Upgrade pip (Recommended)
+### 3. Upgrade pip (recommended)
 
 ```bash
 pip install --upgrade pip
 ```
 
-### 4. Install the Package
+### 4. Install the package
 
-**Install in development mode:**
 ```bash
 pip install -e .
 ```
 
-This installs the package in "editable" mode, so changes to the code are immediately available.
+Or with development dependencies:
 
-**Or install with development dependencies:**
 ```bash
 pip install -e ".[dev]"
 ```
 
-This includes testing and linting tools (pytest, black, ruff).
+### 5. Verify installation
 
-### 5. Verify Installation
-
-Check that the CLI command is available:
 ```bash
-citeverify --help
+verify-cite --help
 ```
 
-You should see the help message for CitationVerify.
+### 6. Configure environment variables (optional)
 
-### 6. Configure Environment Variables (Optional but Recommended)
-
-Create a `.env` file from the example:
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your email for Unpaywall API:
+Edit `.env`:
+
 ```env
 UNPAYWALL_EMAIL=your-email@example.com
 ```
 
-**Note:** Unpaywall requires an email address for API access. This helps them track usage and contact you if needed. Your email is not shared publicly.
+Unpaywall requires an email for API access. It is used only for PDF download lookups by DOI.
 
-### 7. Test the Installation
+### 7. Run tests
 
-Run a simple test to verify everything works:
 ```bash
 pytest tests/ -v
 ```
 
-## Quick Start Example
-
-Once installed, try verifying citations from an arXiv paper:
+## Quick start
 
 ```bash
-citeverify 1706.03762
+verify-cite 1706.03762 --no-download
 ```
 
 This will:
-1. Download the arXiv paper
+
+1. Download the arXiv paper PDF temporarily
 2. Extract citations
 3. Verify them across multiple databases
 4. Score their quality
-5. Display results in a beautiful table
+5. Display results in a table
 
 ## Troubleshooting
 
-### "Command not found: citeverify"
+### "Command not found: verify-cite"
 
-If the command is not found after installation:
 1. Make sure the virtual environment is activated
-2. Try reinstalling: `pip install -e .`
-3. Check that `~/.local/bin` or the venv's bin directory is in your PATH
-
-### Import Errors
-
-If you see import errors:
-1. Make sure you're in the virtual environment
 2. Reinstall: `pip install -e .`
-3. Check that all dependencies are installed: `pip list`
+3. Confirm the venv `bin` directory is on your `PATH`
 
-### Missing Dependencies
+### Import errors
 
-If you get errors about missing packages:
-```bash
-pip install -e ".[dev]"
-```
+1. Stay inside the activated venv
+2. Reinstall: `pip install -e .`
+3. Check dependencies: `pip list`
 
-This installs all required dependencies.
+## Development workflow
 
-## Development Workflow
-
-### Making Changes
-
-Since the package is installed in editable mode (`-e`), any changes you make to the code are immediately available. Just restart the CLI command.
-
-### Running Tests
+Editable installs pick up code changes immediately. Restart the CLI command after edits.
 
 ```bash
-# Run all tests
 pytest
-
-# Run with verbose output
 pytest -v
-
-# Run specific test file
 pytest tests/test_extractor.py
+black verify_cite/ tests/
+ruff check verify_cite/ tests/
+ruff check --fix verify_cite/ tests/
 ```
 
-### Code Formatting
-
-```bash
-# Format code with black
-black citeverify/ tests/
-
-# Check code style with ruff
-ruff check citeverify/ tests/
-
-# Auto-fix issues
-ruff check --fix citeverify/ tests/
-```
-
-## Deactivating Virtual Environment
-
-When you're done working, deactivate the virtual environment:
+## Deactivate
 
 ```bash
 deactivate
 ```
 
-## Next Steps
+## Next steps
 
-- Read the [README.md](README.md) for usage examples
+- Read [README.md](README.md) for usage examples
+- Read [docs/tutorial.md](docs/tutorial.md) for experiments and roadmap
 - Try verifying citations from your own PDFs
-- Explore the different output formats (table, JSON, markdown)
-- Check out the quality scoring system
-
-## Need Help?
-
-- Check the README.md for detailed usage instructions
-- Review the test files for examples of how components work
-- Check the code comments for implementation details

@@ -1,7 +1,7 @@
 """Tests for utility functions and edge cases."""
 
 import pytest
-from citeverify.utils import (
+from verify_cite.utils import (
     clean_title,
     extract_year_from_text,
     fix_concatenated_words,

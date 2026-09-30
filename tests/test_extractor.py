@@ -1,8 +1,8 @@
 """Tests for citation extractor."""
 
 import pytest
-from citeverify.extractor import CitationExtractor
-from citeverify.models import Citation
+from verify_cite.extractor import CitationExtractor
+from verify_cite.models import Citation
 
 
 def test_parse_single_citation(sample_citation_text):
@@ -37,11 +37,36 @@ def test_parse_arxiv_id():
     assert citation.year == 2023
 
 
-def test_extract_from_pdf_missing_file():
-    """Test extraction from non-existent PDF raises."""
+def test_find_references_glued_to_first_citation():
+    """BERT-style pdfplumber artifact: 'References' and first author on one line."""
     extractor = CitationExtractor()
-    with pytest.raises((ValueError, FileNotFoundError, OSError)):
-        extractor.extract_from_pdf("tests/fixtures/nonexistent.pdf")
+    text = (
+        "BERT: Pre-training of Deep Bidirectional Transformers\n"
+        "Abstract We introduce BERT.\n"
+        "References Kevin Clark, Minh-Thang Luong. Semi-supervised sequence.\n"
+        "Jacob Devlin. BERT. NAACL, 2019.\n"
+        "Appendix Extra details.\n"
+    )
+    section = extractor._find_references_section(text)
+    assert section
+    assert section.startswith("Kevin Clark") or "Kevin Clark" in section
+    assert "Appendix" not in section
+    assert not section.startswith("References")
+
+
+def test_find_references_header_on_own_line():
+    """Normal case: References alone on a line."""
+    extractor = CitationExtractor()
+    text = (
+        "Introduction\n"
+        "References\n"
+        "[1] Alice. A paper. 2020.\n"
+        "[2] Bob. Another. 2021.\n"
+    )
+    section = extractor._find_references_section(text)
+    assert "[1]" in section
+    assert "Alice" in section
+
 
 
 # --- Edge case tests ---

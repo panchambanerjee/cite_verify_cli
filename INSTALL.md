@@ -1,17 +1,29 @@
 # Quick Installation Guide
 
 ## Prerequisites
+
 - Python 3.9+
 - pip
 
-## Installation Steps
+## Installation
 
-1. **Navigate to project directory:**
+### From PyPI
+
+```bash
+pip install verify-cite
+verify-cite --help
+```
+
+### From source (development)
+
+1. Navigate to the project directory:
+
    ```bash
-   cd /Users/panchamb/Documents/Projects/micro_saas/cite_verify_cli
+   cd /path/to/cite_verify_cli
    ```
 
-2. **Create and activate virtual environment:**
+2. Create and activate a virtual environment:
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # macOS/Linux
@@ -19,36 +31,36 @@
    venv\Scripts\activate  # Windows
    ```
 
-3. **Install package:**
+3. Install the package:
+
    ```bash
    pip install -e .
    ```
 
-4. **Verify installation:**
+4. Verify installation:
+
    ```bash
-   citeverify --help
+   verify-cite --help
    ```
 
-5. **Optional - Configure environment:**
+5. Optional — configure Unpaywall:
+
    ```bash
-   # Create .env file manually with:
-   # UNPAYWALL_EMAIL=your-email@example.com
+   cp .env.example .env
+   # set UNPAYWALL_EMAIL=your-email@example.com
    ```
 
-## Test Installation
+## Test installation
 
 ```bash
-# Run tests
 pytest
-
-# Try with an arXiv paper
-citeverify 1706.03762 --no-download
+verify-cite 1706.03762 --no-download
 ```
 
 ## Troubleshooting
 
-- **Command not found**: Make sure venv is activated
-- **Import errors**: Run `pip install -e .` again
-- **Missing dependencies**: Run `pip install -e ".[dev]"`
+- **Command not found**: Make sure the virtual environment is activated, or that `pip install verify-cite` completed successfully.
+- **Import errors**: Re-run `pip install -e .` or `pip install verify-cite`.
+- **Missing dependencies**: Run `pip install -e ".[dev]"`.
 
-For detailed setup instructions, see [SETUP.md](SETUP.md).
+For detailed setup instructions, see [SETUP.md](SETUP.md). For a longer walkthrough, see [docs/tutorial.md](docs/tutorial.md).

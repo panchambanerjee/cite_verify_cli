@@ -1,8 +1,8 @@
 """Tests for multi-source verifier."""
 
 import pytest
-from citeverify.models import Citation, VerificationStatus
-from citeverify.verifier import MultiSourceVerifier
+from verify_cite.models import Citation, VerificationStatus
+from verify_cite.verifier import MultiSourceVerifier
 
 
 @pytest.fixture
@@ -107,8 +107,8 @@ def test_extract_subtitle_phrase_strips_article():
 
 def test_verifier_imports_clean_title():
     """Verifier imports clean_title for title normalization before search."""
-    from citeverify.verifier import MultiSourceVerifier
-    from citeverify.utils import clean_title
+    from verify_cite.verifier import MultiSourceVerifier
+    from verify_cite.utils import clean_title
     # Verifier uses clean_title; raw 'asa' should be fixed
     raw = "Grammar asa foreign language"
     normalized = clean_title(raw)

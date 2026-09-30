@@ -1,13 +1,13 @@
-# CitationVerify - Scripts and Modules Summary
+# verify-cite - Scripts and Modules Summary
 
-Complete documentation of all scripts, modules, and their dependencies in the CitationVerify package.
+Complete documentation of all scripts, modules, and their dependencies in the verify-cite package.
 
 ---
 
 ## Package Structure
 
 ```
-citeverify/
+verify_cite/
 ├── __init__.py          # Package initialization
 ├── cli.py               # Main CLI entry point
 ├── extractor.py         # Citation extraction from PDFs/arXiv
@@ -448,8 +448,8 @@ formatter.py (display results)
 
 ## Entry Point
 
-**CLI Command:** `citeverify`
-**Entry Point:** `citeverify.cli:main`
+**CLI Command:** `verify_cite`
+**Entry Point:** `verify_cite.cli:main`
 **Defined in:** `pyproject.toml` → `[project.scripts]`
 
 ---
@@ -468,4 +468,4 @@ formatter.py (display results)
 
 ---
 
-This document provides a complete overview of all scripts, modules, dependencies, and their relationships in the CitationVerify package.
+This document provides a complete overview of all scripts, modules, dependencies, and their relationships in the verify-cite package.

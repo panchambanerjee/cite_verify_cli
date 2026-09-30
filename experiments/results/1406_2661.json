@@ -1,0 +1,684 @@
+{
+  "arxiv_id": "1406.2661",
+  "label": "Generative Adversarial Nets",
+  "paper_title": "Generative Adversarial Nets",
+  "duration_seconds": 376.64,
+  "citations_extracted": 31,
+  "with_title": 29,
+  "with_doi": 0,
+  "with_arxiv_id": 3,
+  "status_counts": {
+    "verified": 9,
+    "partial": 1,
+    "unverified": 21,
+    "error": 0,
+    "missing": 0
+  },
+  "mean_quality_score": 30.52,
+  "citations": [
+    {
+      "number": "1",
+      "title": "J., Bergeron, A., Bouchard, N., and Bengio, Y",
+      "authors": [
+        "Bastien"
+      ],
+      "year": 2012,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Bastien, F., Lamblin, P., Pascanu, R., Bergstra, J., Goodfellow, I. J., Bergeron, A., Bouchard, N., and\nBengio, Y. (2012). Theano: new features and speed improvements. Deep Learning and Unsupervised\nFeatureLearningNIPS2012Workshop.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "2",
+      "title": "Learning deep architectures forAI",
+      "authors": [
+        "Bengio,Y"
+      ],
+      "year": 2009,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Bengio,Y.(2009). LearningdeeparchitecturesforAI. NowPublishers.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "3",
+      "title": "Better mixing via deep representations",
+      "authors": [
+        "Bengio"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": "In\nICML\u201913",
+      "raw_text": "Bengio, Y., Mesnil, G., Dauphin, Y., and Rifai, S. (2013a). Better mixing via deep representations. In\nICML\u201913.",
+      "status": "verified",
+      "confidence": 0.95,
+      "matched_title": "Better Mixing via Deep Representations",
+      "verified_sources": [
+        "openalex"
+      ],
+      "discrepancies": [],
+      "quality_total": 60
+    },
+    {
+      "number": "4",
+      "title": "Bengio,Y.,Yao,L.,Alain,G., and Vincent,P.(2013b).Generalizeddenoisingauto- encoder sasgenerative models",
+      "authors": [
+        "Bengio,Y"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Bengio,Y.,Yao,L.,Alain,G.,andVincent,P.(2013b).Generalizeddenoisingauto-encodersasgenerative\nmodels. InNIPS26.NipsFoundation.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 23
+    },
+    {
+      "number": "5",
+      "title": "Deep generativestochastic networks trainable bybackprop",
+      "authors": [
+        "Bengio,Y"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Bengio,Y.,Thibodeau-Laufer,E.,andYosinski,J.(2014a). Deepgenerativestochasticnetworkstrainable\nbybackprop. InICML\u201914.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 23
+    },
+    {
+      "number": "6",
+      "title": "Deep generative stochastic networks trainablebybackprop",
+      "authors": [
+        "Bengio"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Bengio, Y., Thibodeau-Laufer, E., Alain, G., and Yosinski, J. (2014b). Deep generative stochastic net-\nworkstrainablebybackprop. InProceedingsofthe30thInternationalConferenceonMachineLearning\n(ICML\u201914).",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 23
+    },
+    {
+      "number": "7",
+      "title": "Theano: a CPU and GPU math expression compiler",
+      "authors": [
+        "Bergstra,J"
+      ],
+      "year": 2010,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": "In Proceedings of the\nPythonforScientificComputingConference(SciPy)",
+      "raw_text": "Bergstra,J.,Breuleux,O.,Bastien,F.,Lamblin,P.,Pascanu,R.,Desjardins,G.,Turian,J.,Warde-Farley,\nD., and Bengio, Y. (2010). Theano: a CPU and GPU math expression compiler. In Proceedings of the\nPythonforScientificComputingConference(SciPy). OralPresentation.",
+      "status": "verified",
+      "confidence": 0.7640449438202247,
+      "matched_title": "Theano: A CPU and GPU Math Compiler in Python",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [],
+      "quality_total": 55
+    },
+    {
+      "number": "8",
+      "title": "Quickly generating representative samples from an RBM-derivedprocess",
+      "authors": [
+        "Breuleux"
+      ],
+      "year": 2073,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Breuleux, O., Bengio, Y., and Vincent, P. (2011). Quickly generating representative samples from an\nRBM-derivedprocess. NeuralComputation,23(8),2053\u20132073.",
+      "status": "verified",
+      "confidence": 0.9925925925925926,
+      "matched_title": "Quickly Generating Representative Samples from an RBM-Derived Process",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [
+        "Year mismatch: 2073 vs 2011"
+      ],
+      "quality_total": 62
+    },
+    {
+      "number": "9",
+      "title": "Deep sparserectifier neural networks",
+      "authors": [
+        "Glorot,X"
+      ],
+      "year": 2011,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Glorot,X.,Bordes,A.,andBengio,Y.(2011). Deepsparserectifierneuralnetworks. InAISTATS\u20192011.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "10",
+      "title": "Maxout networks",
+      "authors": [
+        "Goodfellow,I"
+      ],
+      "year": 2013,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Goodfellow,I.J.,Warde-Farley,D.,Mirza,M.,Courville,A.,andBengio,Y.(2013a). Maxoutnetworks.\nInICML\u20192013.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "11",
+      "title": "Multi-prediction deep Boltzmann machines",
+      "authors": [
+        "Goodfellow"
+      ],
+      "year": 2013,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Goodfellow, I.J., Mirza, M., Courville, A., andBengio, Y.(2013b). Multi-predictiondeepBoltzmann\nmachines. InNIPS\u20192013.",
+      "status": "verified",
+      "confidence": 0.95,
+      "matched_title": "Multi-Prediction Deep Boltzmann Machines",
+      "verified_sources": [
+        "openalex"
+      ],
+      "discrepancies": [],
+      "quality_total": 35
+    },
+    {
+      "number": "12",
+      "title": "arXiv preprint arXiv:1308",
+      "authors": [
+        "Goodfellow"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": "1308.4214",
+      "journal": "arXiv",
+      "raw_text": "Goodfellow, I. J., Warde-Farley, D., Lamblin, P., Dumoulin, V., Mirza, M., Pascanu, R., Bergstra,\nJ., Bastien, F., and Bengio, Y. (2013c). Pylearn2: a machine learning research library. arXiv preprint\narXiv:1308.4214.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 23
+    },
+    {
+      "number": "13",
+      "title": "Noise-contrastiveestimation: Anewestimationprinciplefor unnormalizedstatistical models",
+      "authors": [
+        "Gutmann"
+      ],
+      "year": 2010,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Gutmann, M.andHyvarinen, A.(2010). Noise-contrastiveestimation: Anewestimationprinciplefor\nunnormalizedstatisticalmodels. InAISTATS\u20192010.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "14",
+      "title": "E., Mohamed, A., Jaitly, N., Senior, A., Vanhoucke, V., Nguyen, P., Sainath,T., and Kingsbury,B.(2012a)",
+      "authors": [
+        "Hinton"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Hinton, G., Deng, L., Dahl, G. E., Mohamed, A., Jaitly, N., Senior, A., Vanhoucke, V., Nguyen, P.,\nSainath,T.,andKingsbury,B.(2012a). Deepneuralnetworksforacousticmodelinginspeechrecognition.\nIEEESignalProcessingMagazine,29(6),82\u201397.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 23
+    },
+    {
+      "number": "15",
+      "title": "The wake-sleep algorithm for unsupervised neural networks",
+      "authors": [
+        "Hinton,G"
+      ],
+      "year": 1995,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Hinton,G.E.,Dayan,P.,Frey,B.J.,andNeal,R.M.(1995). Thewake-sleepalgorithmforunsupervised\nneuralnetworks. Science,268,1558\u20131161.\n8",
+      "status": "verified",
+      "confidence": 0.95,
+      "matched_title": "The \"Wake-Sleep\" Algorithm for Unsupervised Neural Networks",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [],
+      "quality_total": 58
+    },
+    {
+      "number": "16",
+      "title": "Afast learning algorithm for deep beliefnets",
+      "authors": [
+        "Hinton,G"
+      ],
+      "year": 2006,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Hinton,G.E.,Osindero,S.,andTeh,Y.(2006). Afastlearningalgorithmfordeepbeliefnets. Neural\nComputation,18,1527\u20131554.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "17",
+      "title": "Technicalreport,arXiv:1207",
+      "authors": [
+        "Hinton,G"
+      ],
+      "year": null,
+      "doi": null,
+      "arxiv_id": "1207.0580",
+      "journal": "arXiv",
+      "raw_text": "Hinton,G.E.,Srivastava,N.,Krizhevsky,A.,Sutskever,I.,andSalakhutdinov,R.(2012b). Improving\nneuralnetworksbypreventingco-adaptationoffeaturedetectors. Technicalreport,arXiv:1207.0580.",
+      "status": "verified",
+      "confidence": 0.95,
+      "matched_title": "1207. Hydrolysis of hydroxyalkyl phosphate esters: effect of changing ester group",
+      "verified_sources": [
+        "openalex"
+      ],
+      "discrepancies": [],
+      "quality_total": 38
+    },
+    {
+      "number": "18",
+      "title": null,
+      "authors": [
+        "Hyva\u00a8rinen,A"
+      ],
+      "year": 2005,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Hyva\u00a8rinen,A.(2005).Estimationofnon-normalizedstatisticalmodelsusingscorematching.J.Machine\nLearningRes.,6.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "No title extracted"
+      ],
+      "quality_total": 18
+    },
+    {
+      "number": "19",
+      "title": "Jarrett,K.,Kavukcuoglu,K.,Ranzato,M., and LeCun,Y.(2009).Whatis the bestmulti-stagearchitecture for object recognition?",
+      "authors": [
+        "Jarrett,K"
+      ],
+      "year": 2009,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Jarrett,K.,Kavukcuoglu,K.,Ranzato,M.,andLeCun,Y.(2009).Whatisthebestmulti-stagearchitecture\nforobjectrecognition? InProc.InternationalConferenceonComputerVision(ICCV\u201909),pages2146\u20132153.\nIEEE.",
+      "status": "partial",
+      "confidence": 0.7228915662650602,
+      "matched_title": "What is the best multi-stage architecture for object recognition?",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [],
+      "quality_total": 48
+    },
+    {
+      "number": "20",
+      "title": "Auto-encodingvariationalbayes",
+      "authors": [
+        "Kingma,D"
+      ],
+      "year": 2014,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Kingma,D.P.andWelling,M.(2014). Auto-encodingvariationalbayes. InProceedingsoftheInterna-\ntionalConferenceonLearningRepresentations(ICLR).",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "21",
+      "title": "Learning multiplelayersoffeatures from tinyimages",
+      "authors": [
+        "Krizhevsky,A"
+      ],
+      "year": 2009,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Krizhevsky,A.andHinton,G.(2009). Learningmultiplelayersoffeaturesfromtinyimages. Technical\nreport,UniversityofToronto.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "22",
+      "title": "ImageNet classification withdeep convolutional neural networks",
+      "authors": [
+        "Krizhevsky"
+      ],
+      "year": 2012,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Krizhevsky, A., Sutskever, I., andHinton, G.(2012). ImageNetclassificationwithdeepconvolutional\nneuralnetworks. InNIPS\u20192012.",
+      "status": "verified",
+      "confidence": 0.992,
+      "matched_title": "ImageNet classification with deep convolutional neural networks",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [
+        "Year mismatch: 2012 vs 2017"
+      ],
+      "quality_total": 66
+    },
+    {
+      "number": "23",
+      "title": "Gradient-based learning appliedtodocument recognition",
+      "authors": [
+        "LeCun,Y"
+      ],
+      "year": 1998,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "LeCun,Y.,Bottou,L.,Bengio,Y.,andHaffner,P.(1998). Gradient-basedlearningappliedtodocument\nrecognition. ProceedingsoftheIEEE,86(11),2278\u20132324.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 18
+    },
+    {
+      "number": "24",
+      "title": "Technicalreport,arXiv:1401",
+      "authors": [
+        "Rezende"
+      ],
+      "year": 2014,
+      "doi": null,
+      "arxiv_id": "1401.4082",
+      "journal": "arXiv",
+      "raw_text": "Rezende, D. J., Mohamed, S., and Wierstra, D. (2014). Stochastic backpropagation and approximate\ninferenceindeepgenerativemodels. Technicalreport,arXiv:1401.4082.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "25",
+      "title": "Agenerativeprocess for samplingcontr active auto- encoders",
+      "authors": [
+        "Rifai,S"
+      ],
+      "year": 2012,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Rifai,S.,Bengio,Y.,Dauphin,Y.,andVincent,P.(2012). Agenerativeprocessforsamplingcontractive\nauto-encoders. InICML\u201912.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "26",
+      "title": "Deep Boltzmann machines",
+      "authors": [
+        "Salakhutdinov,R"
+      ],
+      "year": 2009,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Salakhutdinov,R.andHinton,G.E.(2009). DeepBoltzmannmachines. InAISTATS\u20192009,pages448\u2013",
+      "status": "verified",
+      "confidence": 0.95,
+      "matched_title": "Deep Boltzmann machines",
+      "verified_sources": [
+        "openalex"
+      ],
+      "discrepancies": [],
+      "quality_total": 35
+    },
+    {
+      "number": "27",
+      "title": "Information processing indynamicalsystems:Foundationsofharmony theory",
+      "authors": [
+        "Smolensky,P"
+      ],
+      "year": 1986,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": "In\nD",
+      "raw_text": "Smolensky,P.(1986). Informationprocessingindynamicalsystems:Foundationsofharmonytheory. In\nD.E.RumelhartandJ.L.McClelland,editors,ParallelDistributedProcessing,volume1,chapter6,pages\n194\u2013281.MITPress,Cambridge.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 18
+    },
+    {
+      "number": "28",
+      "title": null,
+      "authors": [
+        "Susskind,J"
+      ],
+      "year": 2010,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Susskind,J.,Anderson,A.,andHinton,G.E.(2010).TheTorontofacedataset.TechnicalReportUTML\nTR2010-001,U.Toronto.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "No title extracted"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "29",
+      "title": "InW.W.Cohen,A.McCallum, and S.T.Roweis,editors,ICML2008,pages1064\u20131071",
+      "authors": [
+        "Tieleman"
+      ],
+      "year": 2008,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Tieleman, T. (2008). Training restricted Boltzmann machines using approximations to the likelihood\ngradient. InW.W.Cohen,A.McCallum,andS.T.Roweis,editors,ICML2008,pages1064\u20131071.ACM.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "30",
+      "title": "Extracting and composingrobust features with denoisingauto encoders",
+      "authors": [
+        "Vincent"
+      ],
+      "year": 2008,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Vincent, P., Larochelle, H., Bengio, Y., andManzagol, P.-A.(2008). Extractingandcomposingrobust\nfeatureswithdenoisingautoencoders. InICML2008.",
+      "status": "unverified",
+      "confidence": 0.0,
+      "matched_title": null,
+      "verified_sources": [],
+      "discrepancies": [
+        "No DOI",
+        "No arXiv ID",
+        "Title similarity below threshold (0.7)"
+      ],
+      "quality_total": 20
+    },
+    {
+      "number": "31",
+      "title": "On the convergence of Markovian stochastic algorithms with rapidly decreasing ergodicityrates",
+      "authors": [
+        "Younes"
+      ],
+      "year": 1999,
+      "doi": null,
+      "arxiv_id": null,
+      "journal": null,
+      "raw_text": "Younes, L. (1999). On the convergence of Markovian stochastic algorithms with rapidly decreasing\nergodicityrates. StochasticsandStochasticReports,65(3),177\u2013228.\n9",
+      "status": "verified",
+      "confidence": 0.9946524064171123,
+      "matched_title": "On the convergence of markovian stochastic algorithms with rapidly decreasing ergodicity rates",
+      "verified_sources": [
+        "crossref"
+      ],
+      "discrepancies": [],
+      "quality_total": 60
+    }
+  ]
+}

@@ -1,81 +1,63 @@
-# CitationVerify
+# verify-cite
 
 **Verify citations in research papers from the command line.**
 
-CitationVerify extracts citations from research papers (PDF or arXiv), verifies them across multiple academic databases, scores their quality, and optionally downloads the cited PDFs.
+`verify-cite` extracts citations from research papers (PDF or arXiv), verifies them across multiple academic databases, scores their quality, and optionally downloads the cited PDFs.
+
+Tutorial with experiment results and roadmap: [docs/tutorial.md](docs/tutorial.md)
 
 ## Features
 
-- 📄 **Extract citations** from PDFs or arXiv papers
-- ✅ **Verify citations** across multiple sources (CrossRef, arXiv, Semantic Scholar)
-- 📊 **Quality scoring** across 6 dimensions (verification, peer review, recency, citations, accessibility, venue)
-- 📥 **Download PDFs** with intelligent fallback (arXiv → Unpaywall → Semantic Scholar)
-- 🎨 **Beautiful output** with rich terminal formatting (table, JSON, markdown, BibTeX)
-- 🔧 **Configurable threshold** for title similarity matching
-- 💾 **Smart caching** to avoid re-querying APIs
-- 📝 **BibTeX export** for verified citations
+- **Extract citations** from PDFs or arXiv papers
+- **Verify citations** across CrossRef, arXiv, Semantic Scholar, and OpenAlex
+- **Quality scoring** across 6 dimensions (verification, peer review, recency, citations, accessibility, venue)
+- **Download PDFs** with intelligent fallback (arXiv → Unpaywall → Semantic Scholar)
+- **Rich terminal output** (table, JSON, markdown, BibTeX)
+- **Configurable threshold** for title similarity matching
+- **SQLite caching** to avoid re-querying APIs
+- **BibTeX export** for verified citations
 
 ## Installation
 
-### Prerequisites
+Requires Python 3.9+.
 
-- Python 3.9 or higher
-- pip
+```bash
+pip install verify-cite
+```
 
-### Setup
+Optional: set an email for Unpaywall PDF downloads:
 
-1. **Clone or navigate to the project directory:**
-   ```bash
-   cd /Users/panchamb/Documents/Projects/micro_saas/cite_verify_cli
-   ```
+```bash
+# copy into your working directory or export in the shell
+export UNPAYWALL_EMAIL=your-email@example.com
+```
 
-2. **Create a virtual environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+See `.env.example` for a dotenv template.
 
-3. **Install the package in development mode:**
-   ```bash
-   pip install -e .
-   ```
+### Development install
 
-   Or install with development dependencies:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-4. **Configure environment variables (optional):**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your Unpaywall email
-   ```
-
-   The `.env` file should contain:
-   ```env
-   UNPAYWALL_EMAIL=your-email@example.com
-   ```
+```bash
+git clone https://github.com/panchambanerjee/cite_verify_cli.git
+cd cite_verify_cli
+python3 -m venv venv
+source venv/bin/activate
+pip install -e ".[dev]"
+```
 
 ## Usage
 
-### Basic Usage
+### Basic usage
 
-Verify citations in a PDF:
 ```bash
-citeverify paper.pdf
-```
-
-Verify citations from an arXiv paper:
-```bash
-citeverify https://arxiv.org/abs/1706.03762
-# or
-citeverify 1706.03762
+verify-cite paper.pdf
+verify-cite https://arxiv.org/abs/1706.03762
+verify-cite 1706.03762
 ```
 
 ### Options
 
 ```bash
-citeverify [OPTIONS] INPUT_PATH
+verify-cite [OPTIONS] INPUT_PATH
 
 Options:
   -v, --verbose          Show detailed verification logs (why citations fail)
@@ -93,108 +75,58 @@ Options:
 
 ### Examples
 
-**Download PDFs to a custom directory:**
 ```bash
-citeverify paper.pdf --output ./references
+verify-cite paper.pdf --output ./references
+verify-cite paper.pdf --format json > results.json
+verify-cite paper.pdf --format markdown > report.md
+verify-cite paper.pdf --quality-min 80
+verify-cite paper.pdf --no-verify
+verify-cite paper.pdf --no-download
+verify-cite paper.pdf --format bibtex > refs.bib
+verify-cite paper.pdf --export-bibtex ./references.bib
+verify-cite paper.pdf --threshold 0.6
+verify-cite paper.pdf --verbose
+verify-cite paper.pdf --no-cache
 ```
 
-**Export results as JSON:**
-```bash
-citeverify paper.pdf --format json > results.json
-```
-
-**Export as markdown:**
-```bash
-citeverify paper.pdf --format markdown > report.md
-```
-
-**Only show high-quality citations (score >= 80):**
-```bash
-citeverify paper.pdf --quality-min 80
-```
-
-**Extract citations only (no verification):**
-```bash
-citeverify paper.pdf --no-verify
-```
-
-**Verify without downloading PDFs:**
-```bash
-citeverify paper.pdf --no-download
-```
-
-**Export to BibTeX:**
-```bash
-citeverify paper.pdf --format bibtex > refs.bib
-# or save to file directly
-citeverify paper.pdf --export-bibtex ./references.bib
-```
-
-**Lower threshold for more matches (may include false positives):**
-```bash
-citeverify paper.pdf --threshold 0.6
-```
-
-**Verbose mode to see why citations fail:**
-```bash
-citeverify paper.pdf --verbose
-```
-
-**Disable caching (for debugging):**
-```bash
-citeverify paper.pdf --no-cache
-```
-
-## Project Structure
+## Project structure
 
 ```
-citeverify/
-├── citeverify/
-│   ├── __init__.py
-│   ├── cli.py              # Main CLI interface
-│   ├── extractor.py        # Citation extraction
-│   ├── verifier.py         # Multi-source verification with caching
-│   ├── downloader.py       # PDF downloads
-│   ├── scorer.py           # Quality scoring
-│   ├── formatter.py        # Output formatters (table, JSON, markdown, BibTeX)
-│   ├── cache.py            # SQLite caching for API results
-│   ├── models.py           # Pydantic data models
-│   └── utils.py            # Helper functions
-├── tests/
-│   ├── __init__.py
-│   ├── test_utils.py       # Utils, clean_title, extract_year, fix_concatenated
-│   ├── test_extractor.py   # Extraction + edge cases (Unicode, venue delimiter, etc.)
-│   ├── test_verifier.py    # Verification + edge cases (prefix match, subtitle)
-│   ├── test_downloader.py
-│   └── fixtures/
-├── pyproject.toml
-├── README.md
-├── .env.example
-└── .gitignore
+verify_cite/
+├── __init__.py
+├── cli.py              # Main CLI interface
+├── extractor.py        # Citation extraction
+├── verifier.py         # Multi-source verification with caching
+├── downloader.py       # PDF downloads
+├── scorer.py           # Quality scoring
+├── formatter.py        # Output formatters (table, JSON, markdown, BibTeX)
+├── cache.py            # SQLite caching for API results
+├── models.py           # Pydantic data models
+└── utils.py            # Helper functions
 ```
 
-## Edge Cases Handled
+Python import: `import verify_cite`. Console command: `verify-cite`.
 
-CitationVerify handles many PDF extraction quirks and verification edge cases:
+## Edge cases handled
 
 **Extraction (from PDF text):**
-- **Concatenated phrases** – Spaces dropped at line breaks: "Grammar asa foreign language" → "Grammar as a foreign language"; "inthe", "ofthe", "asa" etc. are fixed
-- **Year in page ranges** – Skips 1929 in "15(1):1929–1958" and correctly extracts 2014 as publication year
-- **Unicode author names** – Recognizes names like Łukasz, Óscar, etc. (non-ASCII)
-- **Venue delimiters** – Handles "Title. In International Conference..." and "TitleInInternational..." (missing space restored)
-- **Venue-like rejection** – Avoids treating venue text ("In International Conference...") as the paper title
-- **Leading reference numbers** – Strips "[17]" or "[37]" from citation text before parsing
-- **Compound words** – Preserves "overfitting" (does not split to "over fitting")
-- **Hyphenated line breaks** – Joins "im- age" → "image"
+- Concatenated phrases – Spaces dropped at line breaks: "Grammar asa foreign language" → "Grammar as a foreign language"
+- Year in page ranges – Skips 1929 in "15(1):1929–1958" and correctly extracts 2014
+- Unicode author names – Recognizes names like Łukasz, Óscar, etc.
+- Venue delimiters – Handles "Title. In International Conference..." and missing spaces
+- Venue-like rejection – Avoids treating venue text as the paper title
+- Leading reference numbers – Strips "[17]" from citation text before parsing
+- Compound words – Preserves "overfitting"
+- Hyphenated line breaks – Joins "im- age" → "image"
 
 **Verification:**
-- **Title normalization** – Applies `clean_title` before search so "asa" → "as a" is fixed
-- **Shortened titles** – Prefix match: "A decomposable attention model" matches "A Decomposable Attention Model for Natural Language Inference" (0.95)
-- **Subtitle fallback** – If main title fails, retries with part after colon (e.g. "Penn Treebank" from "Building...: The Penn Treebank")
-- **Title + venue fallback** – Retries with title + "natural language inference" or journal words when venue is known
-- **VERIFIED threshold** – Similarity ≥ 0.75 marks as VERIFIED (not just PARTIAL)
+- Title normalization – Applies `clean_title` before search
+- Shortened titles – Prefix match for abbreviated citation titles
+- Subtitle fallback – Retries with part after colon
+- Title + venue fallback – Retries with title + venue words when venue is known
+- VERIFIED threshold – Similarity ≥ 0.75 marks as VERIFIED (not just PARTIAL)
 
-## Quality Scoring
+## Quality scoring
 
 Citations are scored across 6 dimensions (total: 100 points):
 
@@ -207,40 +139,27 @@ Citations are scored across 6 dimensions (total: 100 points):
 
 ## Development
 
-### Running Tests
-
 ```bash
 pytest
-```
-
-### Code Formatting
-
-```bash
-black citeverify/ tests/
-ruff check citeverify/ tests/
-```
-
-### Building the Package
-
-```bash
-pip install build
+black verify_cite/ tests/
+ruff check verify_cite/ tests/
+pip install build twine
 python -m build
+twine check dist/*
 ```
 
 ## Troubleshooting
 
 **"Could not find references section"**
 - The PDF may not have a clearly marked references section
-- Try using a different PDF or manually extracting citations
+- Try a different PDF or extract citations manually
 
 **"PDF not available from any source"**
 - The paper may be behind a paywall
-- Check if the paper has an arXiv version
-- Some papers are not available as open access
+- Check whether an arXiv version exists
 
-**Rate limiting errors**
-- The tool respects API rate limits
-- If you see rate limit errors, wait a few seconds and try again
+**Rate limiting**
+- The tool respects API rate limits; wait briefly and retry
 
 ## License
 
@@ -248,17 +167,17 @@ MIT
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. Please open a pull request.
 
-## Next Steps
+## Roadmap
 
-- [x] Add caching to avoid re-verification
-- [x] Add export to BibTeX
-- [x] Add verbose logging for debugging
-- [x] Add configurable similarity threshold
-- [ ] Add GROBID integration for better extraction
-- [ ] Add interactive review mode
-- [ ] Add configuration file support
-- [ ] Add batch processing
-- [ ] Add OpenAlex API as additional verification source
-- [ ] Publish to PyPI
+- [x] Caching to avoid re-verification
+- [x] Export to BibTeX
+- [x] Verbose logging for debugging
+- [x] Configurable similarity threshold
+- [x] OpenAlex as an additional verification source
+- [ ] GROBID integration for better extraction
+- [ ] Interactive review mode
+- [ ] Configuration file support
+- [ ] Batch processing
+- [ ] Publish to PyPI (`twine upload dist/*` once a token is available)
